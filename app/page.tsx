@@ -1,201 +1,122 @@
 import Link from "next/link";
+import { Poppins } from "next/font/google";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
+});
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#F2EDE0] text-[#2C4A30]">
+    <main
+      className={`${poppins.variable} min-h-screen bg-[#FAF9F5] font-[family-name:var(--font-poppins)] text-[#2C4A30]`}
+    >
       {/* ================= NAVBAR ================= */}
-      <header className="w-full">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
+      <header className="border-b border-[#EAE6DA]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 lg:px-8">
           {/* LOGO */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#5C8A54] text-2xl shadow-sm">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#5C8A54] text-base">
               ♻️
             </div>
 
-            <div>
-              <h1 className="text-lg font-bold leading-none text-[#2C4A30]">
-                Bank Sampah
-              </h1>
-
-              <p className="mt-1 text-xs text-[#6F7C70]">
-                Digital Hub
-              </p>
-            </div>
+            <span className="text-base font-semibold tracking-tight text-[#2C4A30]">
+              Bank Sampah
+            </span>
           </Link>
 
           {/* NAVIGATION */}
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-10 md:flex">
             <a
               href="#tentang"
-              className="text-sm font-medium text-[#536956] transition hover:text-[#5C8A54]"
+              className="text-sm font-normal text-[#6B7268] transition hover:text-[#2C4A30]"
             >
               Tentang
             </a>
 
             <a
               href="#fitur"
-              className="text-sm font-medium text-[#536956] transition hover:text-[#5C8A54]"
+              className="text-sm font-normal text-[#6B7268] transition hover:text-[#2C4A30]"
             >
               Fitur
             </a>
 
             <a
               href="#cara-kerja"
-              className="text-sm font-medium text-[#536956] transition hover:text-[#5C8A54]"
+              className="text-sm font-normal text-[#6B7268] transition hover:text-[#2C4A30]"
             >
               Cara Kerja
             </a>
           </nav>
 
-          {/* LOGIN */}
-          <Link
-            href="/sign-in"
-            className="rounded-full bg-[#2C4A30] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#486F43]"
-          >
-            Masuk
-          </Link>
+          {/* POJOK KANAN DIKOSONGKAN */}
+          <div className="w-[88px]" />
         </div>
       </header>
 
       {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden">
-        <div className="absolute -right-20 top-10 h-72 w-72 rounded-full bg-[#E7E0D0] blur-3xl" />
-        <div className="absolute -left-20 bottom-0 h-72 w-72 rounded-full bg-[#ECE6D9] blur-3xl" />
+      <section className="mx-auto max-w-6xl px-6 py-24 text-center lg:px-8 lg:py-32">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#5C8A54]">
+          Bersama Menjaga Lingkungan
+        </p>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-12 lg:grid-cols-2 lg:px-10 lg:pb-28 lg:pt-20">
-          {/* HERO TEXT */}
+        <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold leading-[1.2] tracking-tight text-[#2C4A30] sm:text-5xl">
+          Sampah jadi lebih berharga
+        </h1>
+
+        <p className="mx-auto mt-6 max-w-xl text-base font-light leading-7 text-[#6B7268]">
+          Kelola sampah dengan lebih mudah, dapatkan manfaatnya, dan ikut
+          menciptakan lingkungan yang lebih bersih melalui Bank Sampah
+          Digital Hub.
+        </p>
+
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/nasabah-login"
+            className="rounded-full bg-[#2C4A30] px-8 py-3.5 text-sm font-medium text-white transition hover:bg-[#486F43]"
+          >
+            Login Nasabah
+          </Link>
+
+          <Link
+            href="/admin-login"
+            className="rounded-full border border-[#D9D3C3] px-8 py-3.5 text-sm font-medium text-[#2C4A30] transition hover:bg-[#F2EFE6]"
+          >
+            Login Admin
+          </Link>
+        </div>
+
+        {/* MINI STATS */}
+        <div className="mx-auto mt-20 grid max-w-2xl grid-cols-3 gap-6 border-t border-[#EAE6DA] pt-10">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#D8D0BF] bg-white px-4 py-2 text-sm font-medium text-[#536956] shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-[#A9812F]" />
-              Bersama Menjaga Lingkungan
-            </div>
-
-            <h2 className="max-w-2xl text-5xl font-extrabold leading-[1.08] tracking-tight text-[#2C4A30] sm:text-6xl">
-              Sampah Jadi
-              <span className="block text-[#5C8A54]">
-                Lebih Berharga.
-              </span>
-            </h2>
-
-            <p className="mt-6 max-w-xl text-base leading-7 text-[#667166] sm:text-lg">
-              Kelola sampah dengan lebih mudah, dapatkan manfaatnya,
-              dan ikut menciptakan lingkungan yang lebih bersih melalui
-              Bank Sampah Digital Hub.
+            <p className="text-2xl font-semibold text-[#2C4A30]">
+              100%
             </p>
 
-            {/* BUTTON */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/nasabah-login"
-                className="flex items-center justify-center gap-2 rounded-2xl bg-[#2C4A30] px-7 py-4 font-semibold text-white shadow-lg shadow-[#2C4A30]/15 transition hover:-translate-y-0.5 hover:bg-[#486F43]"
-              >
-                Login Nasabah
-                <span>→</span>
-              </Link>
-
-              <Link
-                href="/admin-login"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-[#D2C9B7] bg-white px-7 py-4 font-semibold text-[#5C8A54] transition hover:bg-[#F2EDE0]"
-              >
-                Login Admin
-              </Link>
-            </div>
-
-            {/* MINI STATS */}
-            <div className="mt-10 flex flex-wrap gap-8">
-              <div>
-                <p className="text-2xl font-bold text-[#2C4A30]">
-                  100%
-                </p>
-
-                <p className="text-sm text-[#737A70]">
-                  Digital
-                </p>
-              </div>
-
-              <div className="h-10 w-px bg-[#D8D0BF]" />
-
-              <div>
-                <p className="text-2xl font-bold text-[#2C4A30]">
-                  ♻️
-                </p>
-
-                <p className="text-sm text-[#737A70]">
-                  Ramah Lingkungan
-                </p>
-              </div>
-
-              <div className="h-10 w-px bg-[#D8D0BF]" />
-
-              <div>
-                <p className="text-2xl font-bold text-[#2C4A30]">
-                  Mudah
-                </p>
-
-                <p className="text-sm text-[#737A70]">
-                  Digunakan
-                </p>
-              </div>
-            </div>
+            <p className="mt-1 text-xs font-light text-[#8A9086]">
+              Digital
+            </p>
           </div>
 
-          {/* HERO CARD */}
-          <div className="relative mx-auto w-full max-w-lg">
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-[#E7E0D0] p-6 shadow-2xl shadow-[#2C4A30]/10 sm:p-8">
-              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#D5CCB9]" />
-              <div className="absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-[#DDD5C5]" />
+          <div className="border-x border-[#EAE6DA]">
+            <p className="text-2xl font-semibold text-[#2C4A30]">
+              ♻️
+            </p>
 
-              <div className="relative">
-                {/* ILLUSTRATION */}
-                <div className="flex h-72 items-center justify-center rounded-[2rem] bg-[#FBF8F0]">
-                  <div className="text-center">
-                    <div className="text-8xl">
-                      🌱
-                    </div>
+            <p className="mt-1 text-xs font-light text-[#8A9086]">
+              Ramah Lingkungan
+            </p>
+          </div>
 
-                    <div className="mt-4 rounded-2xl bg-white px-6 py-4 shadow-sm">
-                      <p className="text-sm font-medium text-[#70776D]">
-                        Kelola sampahmu
-                      </p>
+          <div>
+            <p className="text-2xl font-semibold text-[#2C4A30]">
+              Mudah
+            </p>
 
-                      <p className="mt-1 text-xl font-bold text-[#5C8A54]">
-                        Jadi lebih bernilai
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* FLOATING CARD */}
-                <div className="absolute -bottom-5 -left-4 rounded-2xl bg-white p-4 shadow-xl sm:-left-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7E0D0] text-xl">
-                      ♻️
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-[#7A7C72]">
-                        Sampah Terkumpul
-                      </p>
-
-                      <p className="font-bold text-[#2C4A30]">
-                        Lebih Terorganisir
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* FLOATING GOLD */}
-                <div className="absolute -right-3 top-10 rounded-2xl bg-[#A9812F] px-4 py-3 text-white shadow-xl sm:-right-5">
-                  <p className="text-xs opacity-80">
-                    Manfaat
-                  </p>
-
-                  <p className="font-bold">
-                    ♻️ + 💰
-                  </p>
-                </div>
-              </div>
-            </div>
+            <p className="mt-1 text-xs font-light text-[#8A9086]">
+              Digunakan
+            </p>
           </div>
         </div>
       </section>
@@ -203,188 +124,148 @@ export default function Home() {
       {/* ================= TENTANG ================= */}
       <section
         id="tentang"
-        className="border-y border-[#DED6C7] bg-[#FBF8F0]"
+        className="border-t border-[#EAE6DA] bg-white"
       >
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-widest text-[#5C8A54]">
-              Tentang Kami
-            </p>
+        <div className="mx-auto max-w-3xl px-6 py-24 text-center lg:px-8">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#5C8A54]">
+            Tentang Kami
+          </p>
 
-            <h3 className="mt-3 text-3xl font-bold text-[#2C4A30] sm:text-4xl">
-              Mengubah kebiasaan,
-              <br />
-              menjaga lingkungan.
-            </h3>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[#2C4A30]">
+            Mengubah kebiasaan, menjaga lingkungan
+          </h2>
 
-            <p className="mt-5 leading-7 text-[#6D746B]">
-              Bank Sampah Digital Hub membantu nasabah dan pengelola
-              bank sampah mengelola aktivitas persampahan secara
-              lebih mudah dan terorganisir.
-            </p>
-          </div>
+          <p className="mt-5 text-base font-light leading-7 text-[#6B7268]">
+            Bank Sampah Digital Hub membantu nasabah dan pengelola bank
+            sampah mengelola aktivitas persampahan secara lebih mudah dan
+            terorganisir.
+          </p>
         </div>
       </section>
 
       {/* ================= FITUR ================= */}
       <section
         id="fitur"
-        className="bg-[#F2EDE0]"
+        className="mx-auto max-w-6xl px-6 py-24 lg:px-8"
       >
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
-          <div className="mb-12">
-            <p className="text-sm font-bold uppercase tracking-widest text-[#5C8A54]">
-              Fitur
-            </p>
+        <div className="mb-14 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#5C8A54]">
+            Fitur
+          </p>
 
-            <h3 className="mt-2 text-3xl font-bold text-[#2C4A30] sm:text-4xl">
-              Semua lebih mudah dalam satu tempat.
-            </h3>
-          </div>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[#2C4A30]">
+            Semua lebih mudah dalam satu tempat
+          </h2>
+        </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            {/* CARD 1 */}
-            <div className="rounded-3xl bg-[#FBF8F0] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E7E0D0] text-2xl">
-                📊
-              </div>
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-[#EAE6DA] bg-[#EAE6DA] md:grid-cols-3">
+          {[
+            {
+              icon: "📊",
+              title: "Kelola Data",
+              desc: "Data nasabah dan aktivitas bank sampah dapat dikelola secara lebih terstruktur.",
+            },
+            {
+              icon: "♻️",
+              title: "Setor Sampah",
+              desc: "Catat setoran sampah dan pantau aktivitas nasabah dengan lebih praktis.",
+            },
+            {
+              icon: "💰",
+              title: "Pantau Saldo",
+              desc: "Nasabah dapat mengetahui saldo dan riwayat transaksi dengan mudah.",
+            },
+          ].map((item) => (
+            <div key={item.title} className="bg-white p-8">
+              <div className="text-2xl">{item.icon}</div>
 
-              <h4 className="mt-6 text-xl font-bold text-[#2C4A30]">
-                Kelola Data
-              </h4>
+              <h3 className="mt-5 text-lg font-semibold text-[#2C4A30]">
+                {item.title}
+              </h3>
 
-              <p className="mt-3 leading-6 text-[#737A70]">
-                Data nasabah dan aktivitas bank sampah dapat
-                dikelola secara lebih terstruktur.
+              <p className="mt-2 text-sm font-light leading-6 text-[#8A9086]">
+                {item.desc}
               </p>
             </div>
-
-            {/* CARD 2 */}
-            <div className="rounded-3xl bg-[#FBF8F0] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E7E0D0] text-2xl">
-                ♻️
-              </div>
-
-              <h4 className="mt-6 text-xl font-bold text-[#2C4A30]">
-                Setor Sampah
-              </h4>
-
-              <p className="mt-3 leading-6 text-[#737A70]">
-                Catat setoran sampah dan pantau aktivitas
-                nasabah dengan lebih praktis.
-              </p>
-            </div>
-
-            {/* CARD 3 */}
-            <div className="rounded-3xl bg-[#FBF8F0] p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E7E0D0] text-2xl">
-                💰
-              </div>
-
-              <h4 className="mt-6 text-xl font-bold text-[#2C4A30]">
-                Pantau Saldo
-              </h4>
-
-              <p className="mt-3 leading-6 text-[#737A70]">
-                Nasabah dapat mengetahui saldo dan riwayat
-                transaksi dengan mudah.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* ================= CARA KERJA ================= */}
       <section
         id="cara-kerja"
-        className="bg-[#FBF8F0]"
+        className="border-t border-[#EAE6DA] bg-white"
       >
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-widest text-[#5C8A54]">
+        <div className="mx-auto max-w-6xl px-6 py-24 lg:px-8">
+          <div className="mb-14 text-center">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#5C8A54]">
               Cara Kerja
             </p>
 
-            <h3 className="mt-3 text-3xl font-bold text-[#2C4A30] sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[#2C4A30]">
               Mulai dalam 3 langkah
-            </h3>
+            </h2>
           </div>
 
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {/* STEP 01 */}
-            <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#2C4A30] text-lg font-bold text-white">
-                01
+          <div className="grid gap-10 md:grid-cols-3">
+            {[
+              {
+                num: "01",
+                title: "Daftar Akun",
+                desc: "Buat akun untuk mulai menggunakan layanan Bank Sampah Digital.",
+              },
+              {
+                num: "02",
+                title: "Setorkan Sampah",
+                desc: "Setorkan sampah sesuai jenis dan ketentuan yang tersedia.",
+              },
+              {
+                num: "03",
+                title: "Dapatkan Manfaat",
+                desc: "Pantau saldo, transaksi, dan manfaat dari sampah yang kamu setorkan.",
+              },
+            ].map((step) => (
+              <div key={step.num} className="text-center">
+                <p className="text-sm font-medium text-[#B9C4AF]">
+                  {step.num}
+                </p>
+
+                <h3 className="mt-3 text-lg font-semibold text-[#2C4A30]">
+                  {step.title}
+                </h3>
+
+                <p className="mt-2 text-sm font-light leading-6 text-[#8A9086]">
+                  {step.desc}
+                </p>
               </div>
-
-              <h4 className="mt-5 font-bold text-[#2C4A30]">
-                Daftar Akun
-              </h4>
-
-              <p className="mt-2 text-sm leading-6 text-[#737A70]">
-                Buat akun untuk mulai menggunakan layanan
-                Bank Sampah Digital.
-              </p>
-            </div>
-
-            {/* STEP 02 */}
-            <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#2C4A30] text-lg font-bold text-white">
-                02
-              </div>
-
-              <h4 className="mt-5 font-bold text-[#2C4A30]">
-                Setorkan Sampah
-              </h4>
-
-              <p className="mt-2 text-sm leading-6 text-[#737A70]">
-                Setorkan sampah sesuai jenis dan ketentuan
-                yang tersedia.
-              </p>
-            </div>
-
-            {/* STEP 03 */}
-            <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#2C4A30] text-lg font-bold text-white">
-                03
-              </div>
-
-              <h4 className="mt-5 font-bold text-[#2C4A30]">
-                Dapatkan Manfaat
-              </h4>
-
-              <p className="mt-2 text-sm leading-6 text-[#737A70]">
-                Pantau saldo, transaksi, dan manfaat dari
-                sampah yang kamu setorkan.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ================= CTA ================= */}
       <section className="bg-[#2C4A30]">
-        <div className="mx-auto max-w-5xl px-6 py-16 text-center">
-          <h3 className="text-3xl font-bold text-white sm:text-4xl">
+        <div className="mx-auto max-w-3xl px-6 py-20 text-center lg:px-8">
+          <h2 className="text-3xl font-semibold tracking-tight text-white">
             Siap mulai berkontribusi?
-          </h3>
+          </h2>
 
-          <p className="mx-auto mt-4 max-w-xl leading-7 text-[#E1E3D8]">
-            Mari bersama-sama menciptakan lingkungan yang lebih
-            bersih dan berkelanjutan.
+          <p className="mx-auto mt-4 max-w-md text-sm font-light leading-6 text-[#D6DCCE]">
+            Mari bersama-sama menciptakan lingkungan yang lebih bersih dan
+            berkelanjutan.
           </p>
 
-          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/sign-in"
-              className="rounded-2xl bg-[#FBF8F0] px-7 py-3.5 font-semibold text-[#2C4A30] transition hover:bg-[#F2EDE0]"
+              href="/nasabah-login"
+              className="rounded-full bg-white px-8 py-3.5 text-sm font-medium text-[#2C4A30] transition hover:bg-[#F2EFE6]"
             >
               Login Nasabah
             </Link>
 
             <Link
               href="/admin-login"
-              className="rounded-2xl border border-[#84947D] px-7 py-3.5 font-semibold text-white transition hover:bg-[#486F43]"
+              className="rounded-full border border-[#5C7457] px-8 py-3.5 text-sm font-medium text-white transition hover:bg-[#3B5C3B]"
             >
               Login Admin
             </Link>
@@ -394,24 +275,16 @@ export default function Home() {
 
       {/* ================= FOOTER ================= */}
       <footer className="bg-[#2C4A30]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-7 sm:flex-row sm:items-center sm:justify-between lg:px-10">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">
-              ♻️
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-8 text-center lg:px-8 sm:flex-row sm:justify-between sm:text-left">
+          <div className="flex items-center gap-2.5">
+            <span className="text-base">♻️</span>
+
+            <span className="text-sm font-medium text-white">
+              Bank Sampah Digital Hub
             </span>
-
-            <div>
-              <p className="font-semibold text-white">
-                Bank Sampah Digital Hub
-              </p>
-
-              <p className="text-xs text-[#C8CEC1]">
-                Bersama untuk lingkungan yang lebih baik.
-              </p>
-            </div>
           </div>
 
-          <p className="text-xs text-[#C8CEC1]">
+          <p className="text-xs font-light text-[#A9B4A1]">
             © 2026 Bank Sampah Digital Hub
           </p>
         </div>
