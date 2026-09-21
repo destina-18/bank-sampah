@@ -101,9 +101,7 @@ export default function NasabahPage() {
   ======================================================= */
 
   const [nasabah, setNasabah] = useState<Nasabah[]>([]);
-
   const [loading, setLoading] = useState(true);
-
   const [refreshing, setRefreshing] = useState(false);
 
   /* =======================================================
@@ -117,11 +115,8 @@ export default function NasabahPage() {
   ======================================================= */
 
   const [showTambah, setShowTambah] = useState(false);
-
   const [showDetail, setShowDetail] = useState(false);
-
   const [showEdit, setShowEdit] = useState(false);
-
   const [showDelete, setShowDelete] = useState(false);
 
   /* =======================================================
@@ -290,6 +285,7 @@ export default function NasabahPage() {
       message,
     });
 
+    // Refresh data setelah tambah/edit/delete
     fetchNasabah(false);
   }
 
@@ -859,9 +855,7 @@ export default function NasabahPage() {
       {toast && (
         <div className="fixed bottom-5 right-5 z-[200] w-[calc(100%-40px)] max-w-[380px]">
 
-          <div
-            className="flex items-start gap-3 rounded-xl border border-[#D8D0BF] bg-[#FBF8F0] p-4 shadow-lg"
-          >
+          <div className="flex items-start gap-3 rounded-xl border border-[#D8D0BF] bg-[#FBF8F0] p-4 shadow-lg">
 
             {toast.type === "success" ? (
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#5C8A54]" />
@@ -894,6 +888,7 @@ export default function NasabahPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -907,23 +902,55 @@ function Avatar({
 }: {
   nasabah: Nasabah;
 }) {
+  /*
+    API mengembalikan foto seperti:
+
+    /uploads/img-1789903772476-727212775.webp
+
+    Karena itu bukan URL lengkap, kita gabungkan
+    dengan API_URL.
+  */
+
+  const fotoUrl = nasabah.foto
+    ? nasabah.foto.startsWith("http://") ||
+      nasabah.foto.startsWith("https://")
+      ? nasabah.foto
+      : `${API_URL}${
+          nasabah.foto.startsWith("/")
+            ? nasabah.foto
+            : `/${nasabah.foto}`
+        }`
+    : null;
+
   return (
     <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#E7E0D0]">
 
-      {nasabah.foto ? (
+      {fotoUrl ? (
         <img
-          src={nasabah.foto}
+          src={fotoUrl}
           alt={nasabah.namaNasabah}
           className="h-full w-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display =
+              "none";
+
+            event.currentTarget.nextElementSibling?.classList.remove(
+              "hidden"
+            );
+          }}
         />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-[#5C8A54]">
-          <UserRound
-            className="h-5 w-5"
-            strokeWidth={1.8}
-          />
-        </div>
-      )}
+      ) : null}
+
+      <div
+        className={`h-full w-full items-center justify-center text-[#5C8A54] ${
+          fotoUrl ? "hidden" : "flex"
+        }`}
+      >
+        <UserRound
+          className="h-5 w-5"
+          strokeWidth={1.8}
+        />
+      </div>
 
     </div>
   );

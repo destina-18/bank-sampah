@@ -10,6 +10,7 @@ import {
   BarChart3,
   LogOut,
   UserCircle,
+  ArrowLeftRight,
 } from "lucide-react";
 
 import {
@@ -50,6 +51,11 @@ const menuItems = [
     icon: Box,
   },
   {
+    label: "Penukaran",
+    path: "/admin/penukaran",
+    icon: ArrowLeftRight,
+  },
+  {
     label: "Laporan",
     path: "/admin/laporan",
     icon: BarChart3,
@@ -65,6 +71,7 @@ export function AppSidebar() {
   // ==========================================
 
   const logout = () => {
+    // Hapus data autentikasi dari localStorage
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("accesstoken");
@@ -72,6 +79,14 @@ export function AppSidebar() {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
 
+    // Hapus cookie autentikasi utama
+    document.cookie =
+      "bank_sampah_token=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax;";
+
+    document.cookie =
+      "bank_sampah_role=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax;";
+
+    // Hapus cookie lama jika masih tersimpan
     document.cookie =
       "token=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
@@ -84,6 +99,7 @@ export function AppSidebar() {
     document.cookie =
       "role=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
+    // Kembali ke halaman utama
     window.location.replace("/");
   };
 
@@ -97,8 +113,6 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className="border-r border-[#e5e0d5] bg-[#fbfaf7]"
     >
-      
-
       <SidebarHeader className="border-b border-[#e8e4da] bg-[#fbfaf7] px-5 py-7">
         <div className="flex items-center gap-3">
           {/* Logo */}
@@ -168,10 +182,13 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-[#e8e4da] bg-[#fbfaf7] px-3 py-4">
         <SidebarMenu>
+          {/* PROFILE */}
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Profile"
-              onClick={() => router.push("/admin/profile")}
+              onClick={() =>
+                router.push("/admin/profile")
+              }
               className={`mb-2 h-auto w-full cursor-pointer rounded-xl px-3 py-3 transition-all ${
                 pathname === "/admin/profile"
                   ? "bg-[#e5f0e2]"
@@ -214,6 +231,8 @@ export function AppSidebar() {
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {/* LOGOUT */}
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Keluar"

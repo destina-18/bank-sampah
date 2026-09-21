@@ -304,21 +304,26 @@ export default function RiwayatNasabahPage() {
 
   const totalTransaksi = data.length;
 
-  const totalBerat = data.reduce(
-    (total, item) => total + Number(item.totalBeratKg || 0),
-    0
-  );
+  const transaksiSelesai = data.filter(
+  (item) => item.status === "selesai"
+);
 
-  const totalPoin = data.reduce(
-    (total, item) =>
-      total +
-      Number(
-        item.totalPoin ??
-          item.estimasiTotalPoin ??
-          0
-      ),
-    0
-  );
+const totalBerat = transaksiSelesai.reduce(
+  (total, item) =>
+    total + Number(item.totalBeratKg || 0),
+  0
+);
+
+const totalPoin = transaksiSelesai.reduce(
+  (total, item) =>
+    total +
+    Number(
+      item.totalPoin ??
+        item.estimasiTotalPoin ??
+        0
+    ),
+  0
+);
 
   const groupedData = useMemo(() => {
     const groups: Record<string, SetorSampah[]> = {};

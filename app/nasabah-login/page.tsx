@@ -160,9 +160,16 @@ export default function NasabahLoginPage() {
       // =========================
 
       document.cookie =
-        `token=${encodeURIComponent(data.token)}; ` +
-        `path=/; ` +
-        `max-age=${60 * 60 * 24}; `;
+  `bank_sampah_token=${encodeURIComponent(data.token)}; ` +
+  `path=/; ` +
+  `max-age=${60 * 60 * 24}; ` +
+  `SameSite=Lax;`;
+
+document.cookie =
+  `bank_sampah_role=${encodeURIComponent(data.role || "NASABAH")}; ` +
+  `path=/; ` +
+  `max-age=${60 * 60 * 24}; ` +
+  `SameSite=Lax;`;
 
       // =========================
       // LOGIN BERHASIL

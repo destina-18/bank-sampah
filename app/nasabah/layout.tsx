@@ -1,39 +1,42 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/nasabah-template/app-sidebar";
+import AuthGuard from "@/components/auth/auth-guard";
 
-export default function AdminLayout({
+export default function NasabahLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
+    <AuthGuard role="NASABAH">
+      <SidebarProvider>
+        <AppSidebar />
 
-      <div className="flex min-h-screen w-full flex-col bg-[#f5f1e9]">
+        <div className="flex min-h-screen w-full flex-col bg-[#f5f1e9]">
 
-        {/* MOBILE / SIDEBAR TRIGGER */}
-        <div className="flex h-14 items-center border-b border-[#e5e0d5] bg-[#fbfaf7] px-4 lg:hidden">
-          <SidebarTrigger className="text-[#2f8135]" />
+          {/* MOBILE / SIDEBAR TRIGGER */}
+          <div className="flex h-14 items-center border-b border-[#e5e0d5] bg-[#fbfaf7] px-4 lg:hidden">
+            <SidebarTrigger className="text-[#2f8135]" />
 
-          <div className="ml-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2f8135]">
-              <RecycleIcon />
+            <div className="ml-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2f8135]">
+                <RecycleIcon />
+              </div>
+
+              <span className="text-sm font-bold text-[#173c2b]">
+                Bank Sampah
+              </span>
             </div>
-
-            <span className="text-sm font-bold text-[#173c2b]">
-              Bank Sampah
-            </span>
           </div>
+
+          {/* PAGE */}
+          <main className="min-h-screen w-full">
+            {children}
+          </main>
+
         </div>
-
-        {/* PAGE */}
-        <main className="min-h-screen w-full">
-          {children}
-        </main>
-
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </AuthGuard>
   );
 }
 

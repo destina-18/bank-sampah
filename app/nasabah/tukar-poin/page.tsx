@@ -12,9 +12,17 @@ import {
   Package,
   Loader2,
   AlertCircle,
-  ArrowRight,
   RefreshCw,
+  X,
+  Download,
+  FileText,
 } from "lucide-react";
+
+import jsPDF from "jspdf";
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 type Hadiah = {
   id: string;
@@ -24,23 +32,56 @@ type Hadiah = {
   foto?: string | null;
 };
 
+type Nasabah = {
+  id?: string;
+  namaNasabah?: string;
+  alamat?: string;
+  telp?: string;
+  saldoPoin?: number;
+};
+
+type HadiahNota = {
+  id?: string;
+  namaHadiah?: string;
+  poinDibutuhkan?: number;
+  stok?: number;
+  foto?: string | null;
+};
+
 type Penukaran = {
   id: string;
   kodePenukaran: string;
   tanggal: string;
   poinTerpakai: number;
   status: string;
-  hadiah?: {
-    namaHadiah: string;
-    poinDibutuhkan?: number;
-  };
+
+  nasabah?: Nasabah;
+
+  hadiah?: HadiahNota;
+};
+
+type NotaData = {
+  id: string;
+  kodePenukaran: string;
+  tanggal: string;
+  poinTerpakai: number;
+  status: string;
+
+  nasabah?: Nasabah;
+
+  hadiah?: HadiahNota;
 };
 
 type DashboardSummary = {
-  saldoPoinSaatIni: number;
-  totalPoinDidapat?: number;
-  totalPoinDitukar?: number;
+  saldoPoin: number;
+  totalPengajuanSetor: number;
+  totalPenukaranHadiah: number;
+  totalPoinDiperoleh: number;
 };
+
+/* =========================================================
+   API HELPER
+========================================================= */
 
 function getBaseUrl() {
   return (
@@ -76,14 +117,52 @@ function getAppKey() {
   );
 }
 
-function formatNumber(value: number) {
+function getHeaders() {
+  const token = getToken();
+  const appKey = getAppKey();
+
+  return {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "x-app-key": appKey,
+    Authorization: token ? `Bearer ${token}` : "",
+  };
+}
+
+async function readJson(response: Response) {
+  const contentType = response.headers.get("content-type");
+
+  if (!contentType?.includes("application/json")) {
+    const text = await response.text();
+
+    console.error("Response bukan JSON:", text);
+
+    throw new Error(
+      `Response server tidak valid (${response.status}).`
+    );
+  }
+
+  return response.json();
+}
+
+/* =========================================================
+   FORMATTER
+========================================================= */
+
+function formatNumber(value: number | undefined | null) {
   return new Intl.NumberFormat("id-ID").format(
-    Number(value || 0)
+    Number(value ?? 0)
   );
 }
 
-function formatDate(value: string) {
+function formatDate(value?: string) {
   if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
     return "-";
   }
 
@@ -93,10 +172,14 @@ function formatDate(value: string) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(date);
 }
 
-function getStatusLabel(status: string) {
+/* =========================================================
+   STATUS
+========================================================= */
+
+function getStatusLabel(status?: string) {
   switch (status?.toLowerCase()) {
     case "diproses":
       return "Diproses";
@@ -110,12 +193,15 @@ function getStatusLabel(status: string) {
     case "dibatalkan":
       return "Dibatalkan";
 
+    case "menunggu_konfirmasi":
+      return "Menunggu Konfirmasi";
+
     default:
       return status || "-";
   }
 }
 
-function getStatusStyle(status: string) {
+function getStatusStyle(status?: string) {
   switch (status?.toLowerCase()) {
     case "selesai":
       return {
@@ -125,6 +211,7 @@ function getStatusStyle(status: string) {
       };
 
     case "diproses":
+    case "menunggu_konfirmasi":
       return {
         className:
           "border-[#eadcbc] bg-[#faf3df] text-[#8a6d3f]",
@@ -148,59 +235,62 @@ function getStatusStyle(status: string) {
   }
 }
 
+/* =========================================================
+   PAGE
+========================================================= */
+
 export default function TukarPoinPage() {
   const [hadiah, setHadiah] = useState<Hadiah[]>([]);
   const [riwayat, setRiwayat] = useState<Penukaran[]>([]);
-
   const [summary, setSummary] =
     useState<DashboardSummary | null>(null);
 
-  const [loadingHadiah, setLoadingHadiah] =
-    useState(true);
-
+  const [loadingHadiah, setLoadingHadiah] = useState(true);
   const [loadingSummary, setLoadingSummary] =
     useState(true);
-
   const [loadingRiwayat, setLoadingRiwayat] =
     useState(true);
 
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
 
   const [selectedHadiah, setSelectedHadiah] =
     useState<Hadiah | null>(null);
 
-  const [showModal, setShowModal] =
-    useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [successMessage, setSuccessMessage] =
     useState("");
 
-  const [actionError, setActionError] =
-    useState("");
+  const [actionError, setActionError] = useState("");
 
-  const [showHistory, setShowHistory] =
+  /* =========================================================
+     NOTA
+  ========================================================= */
+
+  const [selectedNota, setSelectedNota] =
+    useState<Penukaran | null>(null);
+
+  const [notaData, setNotaData] =
+    useState<NotaData | null>(null);
+
+  const [showNotaModal, setShowNotaModal] =
     useState(false);
 
-  // ==========================================
-  // HEADER FETCH
-  // ==========================================
+  const [loadingNota, setLoadingNota] =
+    useState(false);
 
-  function getHeaders() {
-    return {
-      "Content-Type": "application/json",
-      "x-app-key": getAppKey(),
-      Authorization: `Bearer ${getToken()}`,
-    };
-  }
+  const [notaError, setNotaError] = useState("");
 
-  // ==========================================
-  // FETCH KATALOG HADIAH
-  // ==========================================
+  const [downloadingPdf, setDownloadingPdf] =
+    useState(false);
+
+  /* =========================================================
+     GET HADIAH
+  ========================================================= */
 
   async function fetchHadiah() {
     try {
@@ -224,29 +314,23 @@ export default function TukarPoinPage() {
         }
       );
 
-      const contentType =
-        response.headers.get("content-type");
+      const result = await readJson(response);
+
+      console.log("KATALOG HADIAH:", result);
 
       if (
-        !contentType?.includes(
-          "application/json"
-        )
+        response.status === 401 ||
+        response.status === 403
       ) {
         throw new Error(
-          `Response server tidak valid (${response.status}).`
+          result?.message ||
+            "Akses ditolak. Pastikan token yang digunakan adalah token Nasabah."
         );
       }
 
-      const result = await response.json();
-
-      console.log(
-        "KATALOG HADIAH:",
-        result
-      );
-
       if (
         !response.ok ||
-        !result?.success
+        result?.success === false
       ) {
         throw new Error(
           result?.message ||
@@ -255,15 +339,12 @@ export default function TukarPoinPage() {
       }
 
       setHadiah(
-        Array.isArray(result.data)
+        Array.isArray(result?.data)
           ? result.data
           : []
       );
     } catch (err) {
-      console.error(
-        "FETCH HADIAH ERROR:",
-        err
-      );
+      console.error("FETCH HADIAH ERROR:", err);
 
       setError(
         err instanceof Error
@@ -275,9 +356,9 @@ export default function TukarPoinPage() {
     }
   }
 
-  // ==========================================
-  // FETCH SALDO POIN
-  // ==========================================
+  /* =========================================================
+     GET SUMMARY
+  ========================================================= */
 
   async function fetchSummary() {
     try {
@@ -286,7 +367,9 @@ export default function TukarPoinPage() {
       const baseUrl = getBaseUrl();
 
       if (!baseUrl) {
-        return;
+        throw new Error(
+          "NEXT_PUBLIC_API_URL belum diatur."
+        );
       }
 
       const response = await fetch(
@@ -298,29 +381,35 @@ export default function TukarPoinPage() {
         }
       );
 
-      const contentType =
-        response.headers.get("content-type");
-
-      if (
-        !contentType?.includes(
-          "application/json"
-        )
-      ) {
-        throw new Error(
-          "Response summary bukan JSON."
-        );
-      }
-
-      const result = await response.json();
+      const result = await readJson(response);
 
       console.log(
         "DASHBOARD SUMMARY:",
         result
       );
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("accesstoken");
+
+        window.location.replace(
+          "/nasabah-login"
+        );
+
+        return;
+      }
+
+      if (response.status === 403) {
+        throw new Error(
+          result?.message ||
+            "Token yang digunakan bukan tipe token Nasabah."
+        );
+      }
+
       if (
         !response.ok ||
-        !result?.success
+        result?.success === false
       ) {
         throw new Error(
           result?.message ||
@@ -328,22 +417,26 @@ export default function TukarPoinPage() {
         );
       }
 
-      setSummary(
-        result.data || null
-      );
+      setSummary(result?.data || null);
     } catch (err) {
       console.error(
         "FETCH SUMMARY ERROR:",
         err
+      );
+
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Gagal mengambil saldo poin."
       );
     } finally {
       setLoadingSummary(false);
     }
   }
 
-  // ==========================================
-  // FETCH RIWAYAT PENUKARAN
-  // ==========================================
+  /* =========================================================
+     GET RIWAYAT
+  ========================================================= */
 
   async function fetchRiwayat() {
     try {
@@ -352,7 +445,9 @@ export default function TukarPoinPage() {
       const baseUrl = getBaseUrl();
 
       if (!baseUrl) {
-        return;
+        throw new Error(
+          "NEXT_PUBLIC_API_URL belum diatur."
+        );
       }
 
       const response = await fetch(
@@ -364,20 +459,7 @@ export default function TukarPoinPage() {
         }
       );
 
-      const contentType =
-        response.headers.get("content-type");
-
-      if (
-        !contentType?.includes(
-          "application/json"
-        )
-      ) {
-        throw new Error(
-          "Response riwayat bukan JSON."
-        );
-      }
-
-      const result = await response.json();
+      const result = await readJson(response);
 
       console.log(
         "RIWAYAT PENUKARAN:",
@@ -385,8 +467,18 @@ export default function TukarPoinPage() {
       );
 
       if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        throw new Error(
+          result?.message ||
+            "Akses riwayat penukaran ditolak."
+        );
+      }
+
+      if (
         !response.ok ||
-        !result?.success
+        result?.success === false
       ) {
         throw new Error(
           result?.message ||
@@ -395,7 +487,7 @@ export default function TukarPoinPage() {
       }
 
       setRiwayat(
-        Array.isArray(result.data)
+        Array.isArray(result?.data)
           ? result.data
           : []
       );
@@ -404,14 +496,20 @@ export default function TukarPoinPage() {
         "FETCH RIWAYAT ERROR:",
         err
       );
+
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Gagal mengambil riwayat penukaran."
+      );
     } finally {
       setLoadingRiwayat(false);
     }
   }
 
-  // ==========================================
-  // INITIAL FETCH
-  // ==========================================
+  /* =========================================================
+     INITIAL LOAD
+  ========================================================= */
 
   useEffect(() => {
     fetchHadiah();
@@ -419,13 +517,14 @@ export default function TukarPoinPage() {
     fetchRiwayat();
   }, []);
 
-  // ==========================================
-  // FILTER HADIAH
-  // ==========================================
+  /* =========================================================
+     FILTER HADIAH
+  ========================================================= */
 
   const filteredHadiah = useMemo(() => {
-    const keyword =
-      search.toLowerCase().trim();
+    const keyword = search
+      .toLowerCase()
+      .trim();
 
     if (!keyword) {
       return hadiah;
@@ -438,14 +537,17 @@ export default function TukarPoinPage() {
     );
   }, [hadiah, search]);
 
-  const saldoPoin =
-    Number(
-      summary?.saldoPoinSaatIni || 0
-    );
+  /* =========================================================
+     SALDO
+  ========================================================= */
 
-  // ==========================================
-  // BUKA MODAL
-  // ==========================================
+  const saldoPoin = Number(
+    summary?.saldoPoin ?? 0
+  );
+
+  /* =========================================================
+     SELECT HADIAH
+  ========================================================= */
 
   function handleSelectHadiah(
     item: Hadiah
@@ -457,10 +559,6 @@ export default function TukarPoinPage() {
     setShowModal(true);
   }
 
-  // ==========================================
-  // TUTUP MODAL
-  // ==========================================
-
   function closeModal() {
     if (isSubmitting) {
       return;
@@ -471,37 +569,38 @@ export default function TukarPoinPage() {
     setActionError("");
   }
 
-  // ==========================================
-  // TUKAR POIN
-  // ==========================================
+  /* =========================================================
+     TUKAR POIN
+  ========================================================= */
 
   async function handleTukar() {
     if (!selectedHadiah) {
       return;
     }
 
-    const hadiah = selectedHadiah;
+    const hadiahTerpilih =
+      selectedHadiah;
 
-    // Cek stok
-    if (hadiah.stok <= 0) {
+    if (hadiahTerpilih.stok <= 0) {
       setActionError(
         "Hadiah ini sedang habis."
       );
+
       return;
     }
 
-    // Cek saldo
     if (
       saldoPoin <
-      hadiah.poinDibutuhkan
+      hadiahTerpilih.poinDibutuhkan
     ) {
       setActionError(
         `Poin kamu belum cukup. Kamu membutuhkan ${formatNumber(
-          hadiah.poinDibutuhkan
+          hadiahTerpilih.poinDibutuhkan
         )} poin, sedangkan saldo kamu ${formatNumber(
           saldoPoin
         )} poin.`
       );
+
       return;
     }
 
@@ -523,25 +622,14 @@ export default function TukarPoinPage() {
           method: "POST",
           headers: getHeaders(),
           body: JSON.stringify({
-            hadiahId: hadiah.id,
+            hadiahId:
+              hadiahTerpilih.id,
           }),
         }
       );
 
-      const contentType =
-        response.headers.get("content-type");
-
-      if (
-        !contentType?.includes(
-          "application/json"
-        )
-      ) {
-        throw new Error(
-          `Response server tidak valid (${response.status}).`
-        );
-      }
-
-      const result = await response.json();
+      const result =
+        await readJson(response);
 
       console.log(
         "HASIL TUKAR POIN:",
@@ -549,8 +637,18 @@ export default function TukarPoinPage() {
       );
 
       if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        throw new Error(
+          result?.message ||
+            "Penukaran ditolak. Pastikan token yang digunakan adalah token Nasabah."
+        );
+      }
+
+      if (
         !response.ok ||
-        !result?.success
+        result?.success === false
       ) {
         throw new Error(
           result?.message ||
@@ -558,18 +656,16 @@ export default function TukarPoinPage() {
         );
       }
 
-      const data = result.data;
-
       setSuccessMessage(
         `Penukaran berhasil diajukan. Kode transaksi: ${
-          data?.kodePenukaran || "-"
+          result?.data?.kodePenukaran ||
+          "-"
         }`
       );
 
       setShowModal(false);
       setSelectedHadiah(null);
 
-      // Refresh saldo, katalog, dan riwayat
       await Promise.all([
         fetchSummary(),
         fetchHadiah(),
@@ -591,12 +687,581 @@ export default function TukarPoinPage() {
     }
   }
 
+  /* =========================================================
+     GET NOTA
+  ========================================================= */
+
+  async function fetchNota(
+    item: Penukaran
+  ) {
+    try {
+      setLoadingNota(true);
+      setNotaError("");
+      setNotaData(null);
+      setSelectedNota(item);
+      setShowNotaModal(true);
+
+      const baseUrl = getBaseUrl();
+
+      if (!baseUrl) {
+        throw new Error(
+          "NEXT_PUBLIC_API_URL belum diatur."
+        );
+      }
+
+      const response = await fetch(
+        `${baseUrl}/api/v1/penukaran-poin/nota/${item.id}`,
+        {
+          method: "GET",
+          headers: getHeaders(),
+          cache: "no-store",
+        }
+      );
+
+      const result =
+        await readJson(response);
+
+      console.log(
+        "NOTA PENUKARAN:",
+        result
+      );
+
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        throw new Error(
+          result?.message ||
+            "Akses nota ditolak."
+        );
+      }
+
+      if (
+        !response.ok ||
+        result?.success === false
+      ) {
+        throw new Error(
+          result?.message ||
+            "Gagal mengambil nota."
+        );
+      }
+
+      if (!result?.data) {
+        throw new Error(
+          "Data nota tidak ditemukan."
+        );
+      }
+
+      setNotaData(result.data);
+    } catch (err) {
+      console.error(
+        "FETCH NOTA ERROR:",
+        err
+      );
+
+      setNotaError(
+        err instanceof Error
+          ? err.message
+          : "Gagal mengambil nota."
+      );
+    } finally {
+      setLoadingNota(false);
+    }
+  }
+
+  /* =========================================================
+     CLOSE NOTA
+  ========================================================= */
+
+  function closeNota() {
+    if (downloadingPdf) {
+      return;
+    }
+
+    setShowNotaModal(false);
+    setSelectedNota(null);
+    setNotaData(null);
+    setNotaError("");
+  }
+
+  /* =========================================================
+     DOWNLOAD PDF
+  ========================================================= */
+
+  async function downloadNotaPdf() {
+    if (!selectedNota) {
+      return;
+    }
+
+    try {
+      setDownloadingPdf(true);
+      setNotaError("");
+
+      /*
+       * Kalau notaData sudah berhasil diambil,
+       * gunakan data tersebut.
+       *
+       * Kalau belum ada, ambil ulang dari API.
+       */
+
+      let data: NotaData;
+
+      if (notaData) {
+        data = notaData;
+      } else {
+        const baseUrl = getBaseUrl();
+
+        if (!baseUrl) {
+          throw new Error(
+            "NEXT_PUBLIC_API_URL belum diatur."
+          );
+        }
+
+        const response = await fetch(
+          `${baseUrl}/api/v1/penukaran-poin/nota/${selectedNota.id}`,
+          {
+            method: "GET",
+            headers: getHeaders(),
+            cache: "no-store",
+          }
+        );
+
+        const result =
+          await readJson(response);
+
+        if (
+          !response.ok ||
+          result?.success === false
+        ) {
+          throw new Error(
+            result?.message ||
+              "Gagal mengambil data nota."
+          );
+        }
+
+        if (!result?.data) {
+          throw new Error(
+            "Data nota tidak ditemukan."
+          );
+        }
+
+        data = result.data as NotaData;
+
+        setNotaData(data);
+      }
+
+      /* =====================================================
+         DATA PDF
+      ===================================================== */
+
+      const kode =
+        data.kodePenukaran ||
+        selectedNota.kodePenukaran ||
+        "-";
+
+      const tanggal =
+        formatDate(data.tanggal);
+
+      const namaNasabah =
+        data.nasabah?.namaNasabah ||
+        selectedNota.nasabah?.namaNasabah ||
+        "-";
+
+      const namaHadiah =
+        data.hadiah?.namaHadiah ||
+        selectedNota.hadiah?.namaHadiah ||
+        "-";
+
+      const poin = Number(
+        data.poinTerpakai ??
+          selectedNota.poinTerpakai ??
+          0
+      );
+
+      const status = getStatusLabel(
+        String(
+          data.status ??
+            selectedNota.status ??
+            ""
+        )
+      );
+
+      const alamat =
+        data.nasabah?.alamat ||
+        selectedNota.nasabah?.alamat ||
+        "-";
+
+      const telp =
+        data.nasabah?.telp ||
+        selectedNota.nasabah?.telp ||
+        "-";
+
+      /* =====================================================
+         CREATE PDF
+      ===================================================== */
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a5",
+      });
+
+      const pageWidth =
+        pdf.internal.pageSize.getWidth();
+
+      let y = 18;
+
+      /* Header */
+
+      pdf.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      pdf.setFontSize(18);
+
+      pdf.text(
+        "BANK SAMPAH",
+        pageWidth / 2,
+        y,
+        {
+          align: "center",
+        }
+      );
+
+      y += 7;
+
+      pdf.setFontSize(10);
+
+      pdf.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      pdf.text(
+        "Bukti Transaksi Penukaran Poin",
+        pageWidth / 2,
+        y,
+        {
+          align: "center",
+        }
+      );
+
+      y += 7;
+
+      pdf.setDrawColor(
+        180,
+        180,
+        180
+      );
+
+      pdf.line(
+        15,
+        y,
+        pageWidth - 15,
+        y
+      );
+
+      y += 10;
+
+      /* Helper row */
+
+      const row = (
+        label: string,
+        value: string,
+        valueBold = false
+      ) => {
+        pdf.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        pdf.setFontSize(9);
+
+        pdf.text(
+          label,
+          15,
+          y
+        );
+
+        pdf.setFont(
+          "helvetica",
+          valueBold
+            ? "bold"
+            : "normal"
+        );
+
+        pdf.text(
+          value,
+          pageWidth - 15,
+          y,
+          {
+            align: "right",
+          }
+        );
+
+        y += 7;
+      };
+
+      row(
+        "Kode Transaksi",
+        kode,
+        true
+      );
+
+      row(
+        "Tanggal",
+        tanggal
+      );
+
+      y += 2;
+
+      pdf.setDrawColor(
+        200,
+        200,
+        200
+      );
+
+      pdf.setLineDashPattern(
+        [2, 2],
+        0
+      );
+
+      pdf.line(
+        15,
+        y,
+        pageWidth - 15,
+        y
+      );
+
+      pdf.setLineDashPattern(
+        [],
+        0
+      );
+
+      y += 9;
+
+      /* Nasabah */
+
+      pdf.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      pdf.setFontSize(10);
+
+      pdf.text(
+        "Data Nasabah",
+        15,
+        y
+      );
+
+      y += 7;
+
+      row(
+        "Nama",
+        namaNasabah,
+        true
+      );
+
+      row(
+        "Telepon",
+        telp
+      );
+
+      row(
+        "Alamat",
+        alamat
+      );
+
+      y += 2;
+
+      /* Transaksi */
+
+      pdf.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      pdf.setFontSize(10);
+
+      pdf.text(
+        "Detail Penukaran",
+        15,
+        y
+      );
+
+      y += 7;
+
+      row(
+        "Hadiah",
+        namaHadiah,
+        true
+      );
+
+      row(
+        "Poin Terpakai",
+        `${formatNumber(poin)} poin`,
+        true
+      );
+
+      row(
+        "Status",
+        status,
+        true
+      );
+
+      y += 5;
+
+      /* Box poin */
+
+      pdf.setFillColor(
+        237,
+        244,
+        234
+      );
+
+      pdf.roundedRect(
+        15,
+        y,
+        pageWidth - 30,
+        18,
+        3,
+        3,
+        "F"
+      );
+
+      pdf.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      pdf.setFontSize(8);
+
+      pdf.text(
+        "TOTAL POIN DIGUNAKAN",
+        pageWidth / 2,
+        y + 7,
+        {
+          align: "center",
+        }
+      );
+
+      pdf.setFont(
+        "helvetica",
+        "bold"
+      );
+
+      pdf.setFontSize(14);
+
+      pdf.text(
+        `${formatNumber(poin)} POIN`,
+        pageWidth / 2,
+        y + 14,
+        {
+          align: "center",
+        }
+      );
+
+      y += 28;
+
+      /* Footer */
+
+      pdf.setDrawColor(
+        180,
+        180,
+        180
+      );
+
+      pdf.line(
+        15,
+        y,
+        pageWidth - 15,
+        y
+      );
+
+      y += 8;
+
+      pdf.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      pdf.setFontSize(8);
+
+      pdf.text(
+        "Terima kasih telah menggunakan",
+        pageWidth / 2,
+        y,
+        {
+          align: "center",
+        }
+      );
+
+      y += 4;
+
+      pdf.text(
+        "layanan Bank Sampah.",
+        pageWidth / 2,
+        y,
+        {
+          align: "center",
+        }
+      );
+
+      y += 8;
+
+      pdf.setFontSize(7);
+
+      pdf.setTextColor(
+        120,
+        120,
+        120
+      );
+
+      pdf.text(
+        "Nota ini dibuat secara digital.",
+        pageWidth / 2,
+        y,
+        {
+          align: "center",
+        }
+      );
+
+      /* =====================================================
+         SAVE
+      ===================================================== */
+
+      pdf.save(
+        `nota-penukaran-${kode}.pdf`
+      );
+    } catch (err) {
+      console.error(
+        "DOWNLOAD PDF ERROR:",
+        err
+      );
+
+      setNotaError(
+        err instanceof Error
+          ? err.message
+          : "Gagal membuat PDF nota."
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-7 text-[#403c36] md:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        {/* ======================================
+
+        {/* =================================================
             HEADER
-        ====================================== */}
+        ================================================= */}
 
         <div className="mb-7">
           <div className="mb-2 flex items-center gap-2 text-sm text-[#8b8277]">
@@ -616,14 +1281,11 @@ export default function TukarPoinPage() {
               </h1>
 
               <p className="mt-1 max-w-2xl text-sm leading-6 text-[#8c847a]">
-                Gunakan poin yang kamu
-                kumpulkan untuk mendapatkan
-                hadiah atau voucher yang
-                tersedia.
+                Gunakan poin yang kamu kumpulkan
+                untuk mendapatkan hadiah atau
+                voucher yang tersedia.
               </p>
             </div>
-
-            {/* RIWAYAT BUTTON */}
 
             <button
               type="button"
@@ -640,16 +1302,14 @@ export default function TukarPoinPage() {
             >
               <History size={17} />
 
-              <span>
-                Riwayat Penukaran
-              </span>
+              Riwayat Penukaran
             </button>
           </div>
         </div>
 
-        {/* ======================================
-            SALDO POIN
-        ====================================== */}
+        {/* =================================================
+            SALDO
+        ================================================= */}
 
         <section className="mb-7 overflow-hidden rounded-2xl border border-[#dce6d8] bg-[#edf4ea]">
           <div className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
@@ -683,23 +1343,23 @@ export default function TukarPoinPage() {
 
             <div className="rounded-xl border border-[#d9e4d5] bg-white/60 px-4 py-3">
               <p className="text-[11px] text-[#84917e]">
-                Poin yang telah ditukar
+                Total transaksi penukaran
               </p>
 
               <p className="mt-0.5 text-sm font-semibold text-[#53674e]">
                 {formatNumber(
-                  summary?.totalPoinDitukar ||
+                  summary?.totalPenukaranHadiah ??
                     0
                 )}{" "}
-                poin
+                transaksi
               </p>
             </div>
           </div>
         </section>
 
-        {/* ======================================
-            SUCCESS MESSAGE
-        ====================================== */}
+        {/* =================================================
+            SUCCESS
+        ================================================= */}
 
         {successMessage && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#cfe0cb] bg-[#edf6eb] p-4 text-sm text-[#52744b]">
@@ -723,16 +1383,16 @@ export default function TukarPoinPage() {
               onClick={() =>
                 setSuccessMessage("")
               }
-              className="text-xs font-medium text-[#52744b] underline underline-offset-2"
+              className="text-xs font-medium underline underline-offset-2"
             >
               Tutup
             </button>
           </div>
         )}
 
-        {/* ======================================
+        {/* =================================================
             ERROR
-        ====================================== */}
+        ================================================= */}
 
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#e7c9c2] bg-[#fbefec] p-4 text-sm text-[#a15e55]">
@@ -743,8 +1403,7 @@ export default function TukarPoinPage() {
 
             <div className="flex-1">
               <p className="font-semibold">
-                Katalog hadiah tidak dapat
-                dimuat
+                Katalog hadiah tidak dapat dimuat
               </p>
 
               <p className="mt-1">
@@ -762,9 +1421,41 @@ export default function TukarPoinPage() {
           </div>
         )}
 
-        {/* ======================================
-            RIWAYAT PENUKARAN
-        ====================================== */}
+        {/* =================================================
+            ACTION ERROR
+        ================================================= */}
+
+        {actionError && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#eadfcb] bg-[#fffaf0] p-4 text-sm text-[#75633d]">
+            <AlertCircle
+              size={19}
+              className="mt-0.5 shrink-0"
+            />
+
+            <div className="flex-1">
+              <p className="font-semibold">
+                Informasi
+              </p>
+
+              <p className="mt-1">
+                {actionError}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setActionError("")
+              }
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* =================================================
+            RIWAYAT
+        ================================================= */}
 
         {showHistory && (
           <section className="mb-7 rounded-2xl border border-[#e5ded4] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
@@ -780,8 +1471,8 @@ export default function TukarPoinPage() {
                   </h2>
 
                   <p className="text-xs text-[#968d82]">
-                    Daftar penukaran poin
-                    yang pernah kamu lakukan.
+                    Daftar penukaran poin yang
+                    pernah kamu lakukan.
                   </p>
                 </div>
               </div>
@@ -816,84 +1507,87 @@ export default function TukarPoinPage() {
               </div>
             ) : (
               <div className="divide-y divide-[#eee8df]">
-                {riwayat.map(
-                  (item) => {
-                    const status =
-                      getStatusStyle(
-                        item.status
-                      );
+                {riwayat.map((item) => {
+                  const status =
+                    getStatusStyle(
+                      item.status
+                    );
 
-                    const StatusIcon =
-                      status.icon;
+                  const StatusIcon =
+                    status.icon;
 
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
-                      >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f3efe9] text-[#777067]">
-                            <Gift
-                              size={18}
-                            />
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#4c4740]">
-                              {
-                                item
-                                  .hadiah
-                                  ?.namaHadiah
-                              }
-                            </p>
-
-                            <p className="mt-1 text-xs text-[#958c82]">
-                              {
-                                item.kodePenukaran
-                              }{" "}
-                              ·{" "}
-                              {formatDate(
-                                item.tanggal
-                              )}
-                            </p>
-                          </div>
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f3efe9] text-[#777067]">
+                          <Gift size={18} />
                         </div>
 
-                        <div className="flex items-center justify-between gap-4 md:justify-end">
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-[#536b4d]">
-                              -
-                              {formatNumber(
-                                item.poinTerpakai
-                              )}{" "}
-                              poin
-                            </p>
-                          </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#4c4740]">
+                            {item.hadiah
+                              ?.namaHadiah ||
+                              "-"}
+                          </p>
 
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium ${status.className}`}
-                          >
-                            <StatusIcon
-                              size={13}
-                            />
-
-                            {getStatusLabel(
-                              item.status
+                          <p className="mt-1 text-xs text-[#958c82]">
+                            {item.kodePenukaran}
+                            {" · "}
+                            {formatDate(
+                              item.tanggal
                             )}
-                          </span>
+                          </p>
                         </div>
                       </div>
-                    );
-                  }
-                )}
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
+                        <p className="text-sm font-semibold text-[#536b4d]">
+                          -
+                          {formatNumber(
+                            item.poinTerpakai
+                          )}{" "}
+                          poin
+                        </p>
+
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium ${status.className}`}
+                        >
+                          <StatusIcon size={13} />
+
+                          {getStatusLabel(
+                            item.status
+                          )}
+                        </span>
+
+                        {/* TOMBOL NOTA */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            fetchNota(item)
+                          }
+                          className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dcd6cd] bg-white px-3 text-xs font-medium text-[#5f695c] transition hover:bg-[#f3f0ea]"
+                        >
+                          <FileText
+                            size={14}
+                          />
+
+                          Nota
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
         )}
 
-        {/* ======================================
+        {/* =================================================
             SEARCH
-        ====================================== */}
+        ================================================= */}
 
         <section className="mb-6">
           <div className="relative max-w-md">
@@ -916,9 +1610,9 @@ export default function TukarPoinPage() {
           </div>
         </section>
 
-        {/* ======================================
-            TITLE KATALOG
-        ====================================== */}
+        {/* =================================================
+            TITLE HADIAH
+        ================================================= */}
 
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -927,8 +1621,8 @@ export default function TukarPoinPage() {
             </h2>
 
             <p className="mt-0.5 text-xs text-[#958c82]">
-              Pilih hadiah yang sesuai
-              dengan jumlah poinmu.
+              Pilih hadiah yang sesuai dengan
+              jumlah poinmu.
             </p>
           </div>
 
@@ -937,6 +1631,7 @@ export default function TukarPoinPage() {
             onClick={() => {
               fetchHadiah();
               fetchSummary();
+              fetchRiwayat();
             }}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4ddd3] bg-[#fffdf9] text-[#81796e] transition hover:bg-[#f3f0ea]"
             title="Refresh"
@@ -945,9 +1640,9 @@ export default function TukarPoinPage() {
           </button>
         </div>
 
-        {/* ======================================
+        {/* =================================================
             LOADING HADIAH
-        ====================================== */}
+        ================================================= */}
 
         {loadingHadiah ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -970,12 +1665,7 @@ export default function TukarPoinPage() {
               </div>
             ))}
           </div>
-        ) : filteredHadiah.length ===
-          0 ? (
-          /* ======================================
-             EMPTY
-          ====================================== */
-
+        ) : filteredHadiah.length === 0 ? (
           <div className="rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] px-6 py-16 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eee9e1] text-[#91887d]">
               <Gift size={28} />
@@ -986,128 +1676,103 @@ export default function TukarPoinPage() {
             </h3>
 
             <p className="mt-1 text-xs text-[#958c81]">
-              Coba gunakan kata pencarian
-              yang lain.
+              Coba gunakan kata pencarian yang
+              lain.
             </p>
           </div>
         ) : (
-          /* ======================================
-             KATALOG
-          ====================================== */
-
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredHadiah.map(
-              (item) => {
-                const cukupPoin =
-                  saldoPoin >=
-                  item.poinDibutuhkan;
+            {filteredHadiah.map((item) => {
+              const cukupPoin =
+                saldoPoin >=
+                Number(
+                  item.poinDibutuhkan
+                );
 
-                const tersedia =
-                  item.stok > 0;
+              const tersedia =
+                Number(item.stok) > 0;
 
-                const bisaTukar =
-                  cukupPoin &&
-                  tersedia;
+              const bisaTukar =
+                cukupPoin && tersedia;
 
-                return (
-                  <article
-                    key={item.id}
-                    className="group overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(86,72,52,0.08)]"
-                  >
-                    {/* FOTO */}
-
-                    <div className="relative h-48 overflow-hidden bg-[#eee9e1]">
-                      {item.foto ? (
-                        <img
-                          src={item.foto}
-                          alt={
-                            item.namaHadiah
-                          }
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                          onError={(
-                            e
-                          ) => {
-                            e.currentTarget.style.display =
-                              "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center bg-[#edf2e9] text-[#73856d]">
-                          <Gift
-                            size={48}
-                            strokeWidth={
-                              1.4
-                            }
-                          />
-                        </div>
-                      )}
-
-                      {/* STOK */}
-
-                      <div className="absolute right-4 top-4">
-                        <span
-                          className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${
-                            tersedia
-                              ? "border-[#d7e3d2] bg-[#eff5ec] text-[#5b754f]"
-                              : "border-[#e5cfca] bg-[#faf0ee] text-[#a05f55]"
-                          }`}
-                        >
-                          {tersedia
-                            ? `Stok ${item.stok}`
-                            : "Stok habis"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* CONTENT */}
-
-                    <div className="p-5">
-                      <h3 className="min-h-[48px] text-[16px] font-semibold leading-6 text-[#403c36]">
-                        {
+              return (
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(86,72,52,0.08)]"
+                >
+                  <div className="relative h-48 overflow-hidden bg-[#eee9e1]">
+                    {item.foto ? (
+                      <img
+                        src={item.foto}
+                        alt={
                           item.namaHadiah
                         }
-                      </h3>
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        onError={(e) => {
+                          e.currentTarget.style.display =
+                            "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-[#edf2e9] text-[#73856d]">
+                        <Gift
+                          size={48}
+                          strokeWidth={1.4}
+                        />
+                      </div>
+                    )}
 
-                      {/* POIN */}
+                    <div className="absolute right-4 top-4">
+                      <span
+                        className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${
+                          tersedia
+                            ? "border-[#d7e3d2] bg-[#eff5ec] text-[#5b754f]"
+                            : "border-[#e5cfca] bg-[#faf0ee] text-[#a05f55]"
+                        }`}
+                      >
+                        {tersedia
+                          ? `Stok ${item.stok}`
+                          : "Stok habis"}
+                      </span>
+                    </div>
+                  </div>
 
-                      <div className="mt-4 flex items-center justify-between rounded-xl border border-[#dfe9db] bg-[#f0f5ee] px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e1ecdd] text-[#5c7753]">
-                            <Coins
-                              size={15}
-                            />
-                          </div>
+                  <div className="p-5">
+                    <h3 className="text-base font-semibold text-[#4a453e]">
+                      {item.namaHadiah}
+                    </h3>
 
-                          <span className="text-xs text-[#74816f]">
-                            Poin dibutuhkan
-                          </span>
+                    <div className="mt-4 flex items-center justify-between rounded-xl bg-[#edf4ea] p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#dbe9d6] text-[#5c7955]">
+                          <Coins size={15} />
                         </div>
 
-                        <p className="text-sm font-semibold text-[#4f6c49]">
-                          {formatNumber(
-                            item.poinDibutuhkan
-                          )}
-                        </p>
+                        <span className="text-xs text-[#70806b]">
+                          Poin dibutuhkan
+                        </span>
                       </div>
 
-                      {/* STATUS POIN */}
-
-                      {!cukupPoin &&
-                        tersedia && (
-                          <p className="mt-3 text-[11px] text-[#a06b61]">
-                            Poin kamu belum
-                            mencukupi untuk
-                            hadiah ini.
-                          </p>
+                      <span className="text-sm font-bold text-[#4f6d48]">
+                        {formatNumber(
+                          item.poinDibutuhkan
                         )}
+                      </span>
+                    </div>
 
-                      {/* BUTTON */}
+                    {!cukupPoin &&
+                      tersedia && (
+                        <p className="mt-3 text-xs text-[#a15e55]">
+                          Poin kamu belum
+                          mencukupi untuk hadiah
+                          ini.
+                        </p>
+                      )}
 
+                    {tersedia ? (
                       <button
                         type="button"
-                        disabled={
-                          !bisaTukar
-                        }
+                        disabled={!bisaTukar}
                         onClick={() =>
                           handleSelectHadiah(
                             item
@@ -1115,219 +1780,134 @@ export default function TukarPoinPage() {
                         }
                         className={`mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium transition ${
                           bisaTukar
-                            ? "bg-[#6f8467] text-white hover:bg-[#5f7557]"
-                            : "cursor-not-allowed bg-[#ebe7e0] text-[#aaa197]"
+                            ? "bg-[#2e7d32] text-white hover:bg-[#205c29]"
+                            : "cursor-not-allowed bg-[#ece8e2] text-[#aaa197]"
                         }`}
                       >
-                        <span>
-                          {!tersedia
-                            ? "Stok Habis"
-                            : !cukupPoin
-                            ? "Poin Belum Cukup"
-                            : "Tukar Sekarang"}
-                        </span>
-
-                        {bisaTukar && (
-                          <ArrowRight
-                            size={16}
-                          />
+                        {bisaTukar ? (
+                          <>
+                            Tukar Sekarang
+                            <Gift size={16} />
+                          </>
+                        ) : (
+                          "Poin Belum Cukup"
                         )}
                       </button>
-                    </div>
-                  </article>
-                );
-              }
-            )}
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-4 flex h-11 w-full cursor-not-allowed items-center justify-center rounded-xl bg-[#ece8e2] text-sm font-medium text-[#aaa197]"
+                      >
+                        Stok Habis
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
 
-        {/* ======================================
-            INFO
-        ====================================== */}
-
-        <div className="mt-7 rounded-2xl border border-[#e5ded4] bg-[#fffdf9] px-5 py-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0ebe4] text-[#776f65]">
-              <Gift size={15} />
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#625b52]">
-                Cara menukar poin
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-[#948b80]">
-                Pilih hadiah yang tersedia,
-                pastikan saldo poin mencukupi,
-                lalu tekan tombol Tukar
-                Sekarang. Setelah pengajuan
-                berhasil, penukaran akan
-                berstatus diproses sampai
-                diselesaikan oleh admin.
-              </p>
-            </div>
-          </div>
-        </div>
+        <div className="h-10" />
       </div>
 
-      {/* ========================================
-          MODAL KONFIRMASI
-      ========================================= */}
+      {/* =====================================================
+          MODAL KONFIRMASI TUKAR
+      ===================================================== */}
 
       {showModal &&
         selectedHadiah && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f342f]/35 px-5 backdrop-blur-[2px]">
-            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#e5ded4] bg-[#fffdf9] shadow-[0_20px_60px_rgba(47,52,47,0.16)]">
-              {/* HEADER */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#263329]/30 px-4 backdrop-blur-[2px]">
+            <div className="w-full max-w-md rounded-2xl border border-[#e4ddd3] bg-[#fffdf9] p-6 shadow-[0_20px_60px_rgba(45,55,45,0.18)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#403c36]">
+                    Konfirmasi Penukaran
+                  </h2>
 
-              <div className="border-b border-[#eee8df] px-6 py-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f2e6] text-[#587551]">
-                    <Gift size={19} />
-                  </div>
-
-                  <div>
-                    <h3 className="text-base font-semibold text-[#403c36]">
-                      Konfirmasi Penukaran
-                    </h3>
-
-                    <p className="mt-0.5 text-xs text-[#958c82]">
-                      Pastikan hadiah yang kamu
-                      pilih sudah benar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* CONTENT */}
-
-              <div className="px-6 py-5">
-                <div className="flex gap-4 rounded-xl border border-[#e8e1d8] bg-[#faf7f2] p-3">
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#eee9e1]">
-                    {selectedHadiah.foto ? (
-                      <img
-                        src={
-                          selectedHadiah.foto
-                        }
-                        alt={
-                          selectedHadiah.namaHadiah
-                        }
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[#7b8975]">
-                        <Gift
-                          size={27}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold leading-5 text-[#47423b]">
-                      {
-                        selectedHadiah.namaHadiah
-                      }
-                    </p>
-
-                    <p className="mt-2 text-xs text-[#8f867b]">
-                      Poin dibutuhkan
-                    </p>
-
-                    <p className="text-sm font-semibold text-[#55714e]">
-                      {formatNumber(
-                        selectedHadiah.poinDibutuhkan
-                      )}{" "}
-                      poin
-                    </p>
-                  </div>
+                  <p className="mt-1 text-xs text-[#8c847a]">
+                    Pastikan hadiah dan jumlah
+                    poin sudah sesuai.
+                  </p>
                 </div>
 
-                {/* RINGKASAN */}
-
-                <div className="mt-4 space-y-3 rounded-xl border border-[#e8e1d8] p-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#8d857b]">
-                      Saldo saat ini
-                    </span>
-
-                    <span className="font-medium text-[#504a43]">
-                      {formatNumber(
-                        saldoPoin
-                      )}{" "}
-                      poin
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#8d857b]">
-                      Poin digunakan
-                    </span>
-
-                    <span className="font-medium text-[#a16058]">
-                      -
-                      {formatNumber(
-                        selectedHadiah.poinDibutuhkan
-                      )}{" "}
-                      poin
-                    </span>
-                  </div>
-
-                  <div className="border-t border-[#eee8df] pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-[#5a544c]">
-                        Sisa saldo
-                      </span>
-
-                      <span className="text-base font-semibold text-[#4f6b49]">
-                        {formatNumber(
-                          saldoPoin -
-                            selectedHadiah.poinDibutuhkan
-                        )}{" "}
-                        poin
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ERROR */}
-
-                {actionError && (
-                  <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#e7c9c2] bg-[#fbefec] p-3 text-xs text-[#a15e55]">
-                    <AlertCircle
-                      size={16}
-                      className="mt-0.5 shrink-0"
-                    />
-
-                    <span>
-                      {actionError}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* FOOTER */}
-
-              <div className="flex gap-3 border-t border-[#eee8df] px-6 py-4">
                 <button
                   type="button"
-                  disabled={isSubmitting}
                   onClick={closeModal}
-                  className="h-11 flex-1 rounded-xl border border-[#e0d9d0] bg-[#faf7f2] text-sm font-medium text-[#71695f] transition hover:bg-[#f3efe9] disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={
+                    isSubmitting
+                  }
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8d857b] hover:bg-[#f2eee8] disabled:opacity-50"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-xl border border-[#e6e0d7] bg-[#f7f4ee] p-4">
+                <p className="text-xs text-[#8b8277]">
+                  Hadiah
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-[#403c36]">
+                  {
+                    selectedHadiah.namaHadiah
+                  }
+                </p>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-white p-3">
+                    <p className="text-[10px] text-[#958c82]">
+                      Poin digunakan
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-[#536b4d]">
+                      {formatNumber(
+                        selectedHadiah.poinDibutuhkan
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-white p-3">
+                    <p className="text-[10px] text-[#958c82]">
+                      Saldo setelah
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-[#536b4d]">
+                      {formatNumber(
+                        saldoPoin -
+                          selectedHadiah.poinDibutuhkan
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {actionError && (
+                <div className="mt-4 rounded-xl border border-[#e7c9c2] bg-[#fbefec] p-3 text-xs text-[#a15e55]">
+                  {actionError}
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={
+                    isSubmitting
+                  }
+                  className="flex-1 rounded-xl border border-[#e1dbd2] bg-white px-4 py-3 text-sm font-medium text-[#696157] hover:bg-[#f5f2ec] disabled:opacity-50"
                 >
                   Batal
                 </button>
 
                 <button
                   type="button"
-                  disabled={
-                    isSubmitting ||
-                    saldoPoin <
-                      selectedHadiah.poinDibutuhkan ||
-                    selectedHadiah.stok <= 0
-                  }
                   onClick={handleTukar}
-                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#6f8467] text-sm font-medium text-white transition hover:bg-[#5f7557] disabled:cursor-not-allowed disabled:bg-[#c7c4be]"
+                  disabled={
+                    isSubmitting
+                  }
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#2e7d32] px-4 py-3 text-sm font-semibold text-white hover:bg-[#205c29] disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <>
@@ -1339,18 +1919,294 @@ export default function TukarPoinPage() {
                       Memproses...
                     </>
                   ) : (
-                    <>
-                      Konfirmasi Tukar
-                      <ArrowRight
-                        size={16}
-                      />
-                    </>
+                    "Konfirmasi Tukar"
                   )}
                 </button>
               </div>
             </div>
           </div>
         )}
+
+      {/* =====================================================
+          MODAL NOTA
+      ===================================================== */}
+
+      {showNotaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#263329]/30 px-4 backdrop-blur-[2px]">
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#e4ddd3] bg-[#fffdf9] shadow-[0_20px_60px_rgba(45,55,45,0.18)]">
+
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b border-[#eee8df] px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f2e6] text-[#55764e]">
+                  <FileText
+                    size={18}
+                  />
+                </div>
+
+                <div>
+                  <h2 className="text-base font-semibold text-[#403c36]">
+                    Nota Penukaran
+                  </h2>
+
+                  <p className="mt-1 text-xs text-[#958c82]">
+                    Bukti transaksi penukaran
+                    poin
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeNota}
+                disabled={
+                  downloadingPdf
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[#81796e] hover:bg-[#f3f0ea] disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="p-5">
+              {loadingNota ? (
+                <div className="py-12 text-center">
+                  <Loader2
+                    size={30}
+                    className="mx-auto animate-spin text-[#5d7a55]"
+                  />
+
+                  <p className="mt-3 text-sm font-medium text-[#5c564e]">
+                    Mengambil data nota...
+                  </p>
+
+                  <p className="mt-1 text-xs text-[#968d82]">
+                    Mohon tunggu sebentar.
+                  </p>
+                </div>
+              ) : notaError ? (
+                <div className="rounded-xl border border-[#e7c9c2] bg-[#fbefec] p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle
+                      size={18}
+                      className="mt-0.5 shrink-0 text-[#a15e55]"
+                    />
+
+                    <div>
+                      <p className="text-sm font-semibold text-[#8f514a]">
+                        Nota tidak dapat
+                        dimuat
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-[#a15e55]">
+                        {notaError}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        selectedNota
+                      ) {
+                        fetchNota(
+                          selectedNota
+                        );
+                      }
+                    }}
+                    className="mt-4 rounded-xl border border-[#dfc7c2] bg-white px-4 py-2 text-xs font-medium text-[#8f514a] hover:bg-[#f8f2ef]"
+                  >
+                    Coba Lagi
+                  </button>
+                </div>
+              ) : notaData ? (
+                <>
+                  {/* NOTA PREVIEW */}
+                  <div className="rounded-2xl border border-[#e3ddd4] bg-white p-5">
+                    <div className="text-center">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f2e6] text-[#4f7048]">
+                        <Gift size={22} />
+                      </div>
+
+                      <h3 className="mt-3 text-base font-bold tracking-wide text-[#354c37]">
+                        BANK SAMPAH
+                      </h3>
+
+                      <p className="mt-1 text-[11px] text-[#8f887e]">
+                        Bukti Transaksi
+                        Penukaran Poin
+                      </p>
+                    </div>
+
+                    <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
+
+                    {/* KODE */}
+                    <div className="rounded-xl bg-[#f5f2ec] p-4 text-center">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-[#958c82]">
+                        Kode Transaksi
+                      </p>
+
+                      <p className="mt-1 text-sm font-bold text-[#4b6247]">
+                        {
+                          notaData.kodePenukaran
+                        }
+                      </p>
+                    </div>
+
+                    {/* DATA */}
+                    <div className="mt-5 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-xs text-[#8e867c]">
+                          Tanggal
+                        </span>
+
+                        <span className="text-right text-xs font-medium text-[#504a42]">
+                          {formatDate(
+                            notaData.tanggal
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-xs text-[#8e867c]">
+                          Nasabah
+                        </span>
+
+                        <span className="text-right text-xs font-semibold text-[#504a42]">
+                          {notaData.nasabah
+                            ?.namaNasabah ||
+                            "-"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-xs text-[#8e867c]">
+                          Hadiah
+                        </span>
+
+                        <span className="text-right text-xs font-semibold text-[#504a42]">
+                          {notaData.hadiah
+                            ?.namaHadiah ||
+                            "-"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-start justify-between gap-4">
+                        <span className="text-xs text-[#8e867c]">
+                          Poin Terpakai
+                        </span>
+
+                        <span className="text-right text-xs font-bold text-[#52744b]">
+                          {formatNumber(
+                            notaData.poinTerpakai
+                          )}{" "}
+                          poin
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs text-[#8e867c]">
+                          Status
+                        </span>
+
+                        {(() => {
+                          const status =
+                            getStatusStyle(
+                              notaData.status
+                            );
+
+                          const StatusIcon =
+                            status.icon;
+
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-medium ${status.className}`}
+                            >
+                              <StatusIcon
+                                size={12}
+                              />
+
+                              {getStatusLabel(
+                                notaData.status
+                              )}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
+
+                    {/* TOTAL */}
+                    <div className="rounded-xl bg-[#edf4ea] p-4 text-center">
+                      <p className="text-[10px] uppercase tracking-[0.1em] text-[#7f8d79]">
+                        Total Poin Digunakan
+                      </p>
+
+                      <p className="mt-1 text-xl font-bold text-[#4f6d48]">
+                        {formatNumber(
+                          notaData.poinTerpakai
+                        )}{" "}
+                        POIN
+                      </p>
+                    </div>
+
+                    <p className="mt-5 text-center text-[10px] leading-5 text-[#9a9288]">
+                      Terima kasih telah
+                      menggunakan layanan
+                      Bank Sampah.
+                    </p>
+                  </div>
+
+                  {/* DOWNLOAD */}
+                  <button
+                    type="button"
+                    onClick={
+                      downloadNotaPdf
+                    }
+                    disabled={
+                      downloadingPdf
+                    }
+                    className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2e7d32] text-sm font-semibold text-white transition hover:bg-[#205c29] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {downloadingPdf ? (
+                      <>
+                        <Loader2
+                          size={17}
+                          className="animate-spin"
+                        />
+
+                        Membuat PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Download
+                          size={17}
+                        />
+
+                        Download Nota PDF
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <div className="py-10 text-center">
+                  <FileText
+                    size={30}
+                    className="mx-auto text-[#aaa197]"
+                  />
+
+                  <p className="mt-3 text-sm font-medium text-[#655f56]">
+                    Data nota belum tersedia
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

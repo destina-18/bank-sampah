@@ -13,6 +13,9 @@ export type Kategori = {
   poinPerKg: number;
   jenis: string;
   foto?: string;
+  appMakerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const API_URL = (
@@ -26,10 +29,15 @@ export default function KategoriSampahPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const [showTambah, setShowTambah] = useState(false);
-  const [editData, setEditData] = useState<Kategori | null>(null);
+  const [showTambah, setShowTambah] =
+    useState(false);
+
+  const [editData, setEditData] =
+    useState<Kategori | null>(null);
+
   const [detailData, setDetailData] =
     useState<Kategori | null>(null);
+
   const [deleteData, setDeleteData] =
     useState<Kategori | null>(null);
 
@@ -80,8 +88,11 @@ export default function KategoriSampahPage() {
 
       const response = await fetch(url, {
         method: "GET",
+
         headers: {
+          Accept: "application/json",
           "x-app-key": APP_KEY,
+
           ...(token
             ? {
                 Authorization:
@@ -89,22 +100,23 @@ export default function KategoriSampahPage() {
               }
             : {}),
         },
+
         cache: "no-store",
       });
 
       const text = await response.text();
 
       console.log(
-        "Status:",
+        "GET Status:",
         response.status
       );
 
       console.log(
-        "Response:",
+        "GET Response:",
         text
       );
 
-      let result;
+      let result: any;
 
       try {
         result = JSON.parse(text);
@@ -115,17 +127,24 @@ export default function KategoriSampahPage() {
       }
 
       if (!response.ok) {
+        const message =
+          Array.isArray(result?.message)
+            ? result.message.join(", ")
+            : result?.message;
+
         throw new Error(
-          result?.message ||
+          message ||
             `Gagal mengambil data. Status: ${response.status}`
         );
       }
 
-      setData(
+      const list =
         Array.isArray(result?.data)
           ? result.data
-          : []
-      );
+          : [];
+
+      setData(list);
+
     } catch (error) {
       console.error(
         "GET kategori sampah:",
@@ -154,19 +173,25 @@ export default function KategoriSampahPage() {
      SEARCH
   ========================================================= */
 
-  const filteredData = data.filter((item) => {
-    const keyword =
-      search.toLowerCase();
+  const filteredData = data.filter(
+    (item) => {
+      const keyword =
+        search.toLowerCase().trim();
 
-    return (
-      item.namaKategori
-        ?.toLowerCase()
-        .includes(keyword) ||
-      item.jenis
-        ?.toLowerCase()
-        .includes(keyword)
-    );
-  });
+      if (!keyword) {
+        return true;
+      }
+
+      return (
+        item.namaKategori
+          ?.toLowerCase()
+          .includes(keyword) ||
+        item.jenis
+          ?.toLowerCase()
+          .includes(keyword)
+      );
+    }
+  );
 
   /* =========================================================
      PAGINATION
@@ -195,6 +220,13 @@ export default function KategoriSampahPage() {
       page > totalPage
     ) {
       setPage(totalPage);
+    }
+
+    if (
+      totalPage === 0 &&
+      page !== 1
+    ) {
+      setPage(1);
     }
   }, [page, totalPage]);
 
@@ -243,11 +275,60 @@ export default function KategoriSampahPage() {
   };
 
   /* =========================================================
+     FOTO URL
+  ========================================================= */
+
+  const getFotoUrl = (
+    foto?: string
+  ) => {
+    if (!foto) {
+      return null;
+    }
+
+    if (
+      foto.startsWith("http://") ||
+      foto.startsWith("https://")
+    ) {
+      return foto;
+    }
+
+    return `${API_URL}${
+      foto.startsWith("/")
+        ? foto
+        : `/${foto}`
+    }`;
+  };
+
+  /* =========================================================
+     UPDATE DATA SETELAH EDIT
+  ========================================================= */
+
+  const handleEditSuccess = (
+    updatedData: Kategori
+  ) => {
+    console.log(
+      "UPDATE DATA DARI API:",
+      updatedData
+    );
+
+    setData((prev) =>
+      prev.map((item) =>
+        item.id === updatedData.id
+          ? updatedData
+          : item
+      )
+    );
+
+    setEditData(null);
+  };
+
+  /* =========================================================
      RENDER
   ========================================================= */
 
   return (
     <div className="min-h-screen bg-[#F2EDE0] p-6 text-[#2C4A30]">
+
       <div className="mx-auto max-w-7xl">
 
         {/* =================================================
@@ -255,6 +336,7 @@ export default function KategoriSampahPage() {
         ================================================= */}
 
         <div className="mb-7">
+
           <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-[#737A70]">
             Admin Panel
           </p>
@@ -266,6 +348,7 @@ export default function KategoriSampahPage() {
           <p className="mt-1 text-sm text-[#737A70]">
             Kelola kategori sampah daur ulang
           </p>
+
         </div>
 
         {/* =================================================
@@ -275,15 +358,19 @@ export default function KategoriSampahPage() {
         <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#D8D0BF] bg-[#FBF8F0] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 
           <div className="w-full sm:w-80">
+
             <input
               type="text"
               placeholder="Cari kategori..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
               className="w-full rounded-xl border border-[#D8D0BF] bg-[#F2EDE0] px-4 py-2.5 text-sm text-[#2C4A30] outline-none transition placeholder:text-[#9A9E96] focus:border-[#5C8A54] focus:ring-2 focus:ring-[#E7E0D0]"
             />
+
           </div>
 
           <button
@@ -311,6 +398,7 @@ export default function KategoriSampahPage() {
               {/* HEADER */}
 
               <thead>
+
                 <tr className="border-b border-[#D8D0BF] bg-[#E7E0D0] text-left text-sm text-[#68705F]">
 
                   <th className="px-5 py-4 font-semibold">
@@ -342,6 +430,7 @@ export default function KategoriSampahPage() {
                   </th>
 
                 </tr>
+
               </thead>
 
               {/* BODY */}
@@ -349,24 +438,32 @@ export default function KategoriSampahPage() {
               <tbody>
 
                 {loading ? (
+
                   <tr>
+
                     <td
                       colSpan={7}
                       className="px-5 py-12 text-center text-sm text-[#737A70]"
                     >
+
                       <div className="flex flex-col items-center gap-3">
+
                         <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#D8D0BF] border-t-[#5C8A54]" />
 
                         <span>
                           Memuat data...
                         </span>
+
                       </div>
+
                     </td>
+
                   </tr>
 
                 ) : currentData.length === 0 ? (
 
                   <tr>
+
                     <td
                       colSpan={7}
                       className="px-5 py-14 text-center"
@@ -385,142 +482,173 @@ export default function KategoriSampahPage() {
                       </p>
 
                     </td>
+
                   </tr>
 
                 ) : (
 
                   currentData.map(
-                    (item, index) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-[#E7E0D0] last:border-b-0 transition hover:bg-[#F2EDE0]"
-                      >
+                    (item, index) => {
 
-                        {/* NO */}
+                      const fotoUrl =
+                        getFotoUrl(
+                          item.foto
+                        );
 
-                        <td className="px-5 py-4 text-sm text-[#737A70]">
-                          {start + index + 1}
-                        </td>
+                      return (
+                        <tr
+                          key={item.id}
+                          className="border-b border-[#E7E0D0] last:border-b-0 transition hover:bg-[#F2EDE0]"
+                        >
 
-                        {/* FOTO */}
+                          {/* NO */}
 
-                        <td className="px-5 py-4">
+                          <td className="px-5 py-4 text-sm text-[#737A70]">
+                            {start + index + 1}
+                          </td>
 
-                          {item.foto ? (
-                            <img
-                              src={item.foto}
-                              alt={item.namaKategori}
-                              className="h-14 w-14 rounded-xl border border-[#D8D0BF] object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#EEEEEE] text-[10px] font-medium text-[#8A8F87]">
-                              No Foto
+                          {/* FOTO */}
+
+                          <td className="px-5 py-4">
+
+                            {fotoUrl ? (
+
+                              <img
+                                src={fotoUrl}
+                                alt={
+                                  item.namaKategori
+                                }
+                                className="h-14 w-14 rounded-xl border border-[#D8D0BF] object-cover"
+                                onError={(
+                                  e
+                                ) => {
+                                  e.currentTarget.style.display =
+                                    "none";
+                                }}
+                              />
+
+                            ) : (
+
+                              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#EEEEEE] text-[10px] font-medium text-[#8A8F87]">
+                                No Foto
+                              </div>
+
+                            )}
+
+                          </td>
+
+                          {/* NAMA */}
+
+                          <td className="px-5 py-4">
+
+                            <p className="font-medium text-[#2C4A30]">
+                              {
+                                item.namaKategori
+                              }
+                            </p>
+
+                          </td>
+
+                          {/* HARGA */}
+
+                          <td className="px-5 py-4 text-sm text-[#68705F]">
+                            {formatRupiah(
+                              item.hargaPerKg
+                            )}
+                          </td>
+
+                          {/* POIN */}
+
+                          <td className="px-5 py-4">
+
+                            <span className="inline-flex rounded-lg bg-[#F0E6C9] px-2.5 py-1.5 text-xs font-semibold text-[#A9812F]">
+                              {
+                                item.poinPerKg
+                              }{" "}
+                              poin
+                            </span>
+
+                          </td>
+
+                          {/* JENIS */}
+
+                          <td className="px-5 py-4">
+
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${jenisStyle(
+                                item.jenis
+                              )}`}
+                            >
+                              {
+                                item.jenis
+                              }
+                            </span>
+
+                          </td>
+
+                          {/* AKSI */}
+
+                          <td className="px-5 py-4">
+
+                            <div className="flex justify-center gap-2">
+
+                              {/* DETAIL */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDetailData(
+                                    item
+                                  )
+                                }
+                                className="rounded-lg bg-[#EEEEEE] px-3 py-2 text-xs font-medium text-[#68705F] transition hover:bg-[#E7E0D0] hover:text-[#2C4A30]"
+                              >
+                                Detail
+                              </button>
+
+                              {/* EDIT */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditData(
+                                    item
+                                  )
+                                }
+                                className="rounded-lg bg-[#E7E0D0] px-3 py-2 text-xs font-medium text-[#2C4A30] transition hover:bg-[#D8D0BF]"
+                              >
+                                Edit
+                              </button>
+
+                              {/* DELETE */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteData(
+                                    item
+                                  )
+                                }
+                                className="rounded-lg bg-[#EEEEEE] px-3 py-2 text-xs font-medium text-[#8A7168] transition hover:bg-[#E7E0D0]"
+                              >
+                                Hapus
+                              </button>
+
                             </div>
-                          )}
 
-                        </td>
+                          </td>
 
-                        {/* NAMA */}
-
-                        <td className="px-5 py-4">
-                          <p className="font-medium text-[#2C4A30]">
-                            {item.namaKategori}
-                          </p>
-                        </td>
-
-                        {/* HARGA */}
-
-                        <td className="px-5 py-4 text-sm text-[#68705F]">
-                          {formatRupiah(
-                            item.hargaPerKg
-                          )}
-                        </td>
-
-                        {/* POIN */}
-
-                        <td className="px-5 py-4">
-
-                          <span className="inline-flex rounded-lg bg-[#F0E6C9] px-2.5 py-1.5 text-xs font-semibold text-[#A9812F]">
-                            {item.poinPerKg}{" "}
-                            poin
-                          </span>
-
-                        </td>
-
-                        {/* JENIS */}
-
-                        <td className="px-5 py-4">
-
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${jenisStyle(
-                              item.jenis
-                            )}`}
-                          >
-                            {item.jenis}
-                          </span>
-
-                        </td>
-
-                        {/* AKSI */}
-
-                        <td className="px-5 py-4">
-
-                          <div className="flex justify-center gap-2">
-
-                            {/* DETAIL */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDetailData(
-                                  item
-                                )
-                              }
-                              className="rounded-lg bg-[#EEEEEE] px-3 py-2 text-xs font-medium text-[#68705F] transition hover:bg-[#E7E0D0] hover:text-[#2C4A30]"
-                            >
-                              Detail
-                            </button>
-
-                            {/* EDIT */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setEditData(
-                                  item
-                                )
-                              }
-                              className="rounded-lg bg-[#E7E0D0] px-3 py-2 text-xs font-medium text-[#2C4A30] transition hover:bg-[#D8D0BF]"
-                            >
-                              Edit
-                            </button>
-
-                            {/* DELETE */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDeleteData(
-                                  item
-                                )
-                              }
-                              className="rounded-lg bg-[#EEEEEE] px-3 py-2 text-xs font-medium text-[#8A7168] transition hover:bg-[#E7E0D0]"
-                            >
-                              Hapus
-                            </button>
-
-                          </div>
-
-                        </td>
-
-                      </tr>
-                    )
+                        </tr>
+                      );
+                    }
                   )
+
                 )}
 
               </tbody>
 
             </table>
+
           </div>
 
           {/* =================================================
@@ -529,38 +657,51 @@ export default function KategoriSampahPage() {
 
           {!loading &&
             filteredData.length > 0 && (
+
               <div className="flex flex-col gap-3 border-t border-[#D8D0BF] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
 
                 <p className="text-sm text-[#737A70]">
+
                   Menampilkan{" "}
+
                   <span className="font-medium text-[#2C4A30]">
                     {start + 1}
-                  </span>{" "}
-                  -{" "}
+                  </span>
+
+                  {" - "}
+
                   <span className="font-medium text-[#2C4A30]">
                     {Math.min(
                       start + perPage,
                       filteredData.length
                     )}
-                  </span>{" "}
-                  dari{" "}
+                  </span>
+
+                  {" dari "}
+
                   <span className="font-medium text-[#2C4A30]">
                     {filteredData.length}
-                  </span>{" "}
-                  data
+                  </span>
+
+                  {" data"}
+
                 </p>
 
                 {totalPage > 1 && (
+
                   <div className="flex items-center gap-2">
 
                     {/* PREVIOUS */}
 
                     <button
                       type="button"
-                      disabled={page === 1}
+                      disabled={
+                        page === 1
+                      }
                       onClick={() =>
                         setPage(
-                          (p) => p - 1
+                          (p) =>
+                            p - 1
                         )
                       }
                       className="rounded-lg border border-[#D8D0BF] bg-[#FBF8F0] px-3 py-2 text-sm text-[#68705F] transition hover:bg-[#E7E0D0] disabled:cursor-not-allowed disabled:opacity-40"
@@ -572,36 +713,47 @@ export default function KategoriSampahPage() {
 
                     {Array.from(
                       {
-                        length: totalPage,
+                        length:
+                          totalPage,
                       },
-                      (_, i) => i + 1
-                    ).map((number) => (
-                      <button
-                        type="button"
-                        key={number}
-                        onClick={() =>
-                          setPage(number)
-                        }
-                        className={`h-9 w-9 rounded-lg text-sm transition ${
-                          page === number
-                            ? "bg-[#2C4A30] text-white"
-                            : "border border-[#D8D0BF] bg-[#FBF8F0] text-[#68705F] hover:bg-[#E7E0D0]"
-                        }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
+                      (_, i) =>
+                        i + 1
+                    ).map(
+                      (number) => (
+
+                        <button
+                          type="button"
+                          key={number}
+                          onClick={() =>
+                            setPage(
+                              number
+                            )
+                          }
+                          className={`h-9 w-9 rounded-lg text-sm transition ${
+                            page ===
+                            number
+                              ? "bg-[#2C4A30] text-white"
+                              : "border border-[#D8D0BF] bg-[#FBF8F0] text-[#68705F] hover:bg-[#E7E0D0]"
+                          }`}
+                        >
+                          {number}
+                        </button>
+
+                      )
+                    )}
 
                     {/* NEXT */}
 
                     <button
                       type="button"
                       disabled={
-                        page === totalPage
+                        page ===
+                        totalPage
                       }
                       onClick={() =>
                         setPage(
-                          (p) => p + 1
+                          (p) =>
+                            p + 1
                         )
                       }
                       className="rounded-lg border border-[#D8D0BF] bg-[#FBF8F0] px-3 py-2 text-sm text-[#68705F] transition hover:bg-[#E7E0D0] disabled:cursor-not-allowed disabled:opacity-40"
@@ -610,12 +762,15 @@ export default function KategoriSampahPage() {
                     </button>
 
                   </div>
+
                 )}
 
               </div>
+
             )}
 
         </div>
+
       </div>
 
       {/* =====================================================
@@ -623,6 +778,7 @@ export default function KategoriSampahPage() {
       ===================================================== */}
 
       {showTambah && (
+
         <TambahKategori
           onClose={() =>
             setShowTambah(false)
@@ -632,6 +788,7 @@ export default function KategoriSampahPage() {
             getData();
           }}
         />
+
       )}
 
       {/* =====================================================
@@ -639,16 +796,19 @@ export default function KategoriSampahPage() {
       ===================================================== */}
 
       {editData && (
+
         <EditKategori
           data={editData}
+
           onClose={() =>
             setEditData(null)
           }
-          onSuccess={() => {
-            setEditData(null);
-            getData();
-          }}
+
+          onSuccess={
+            handleEditSuccess
+          }
         />
+
       )}
 
       {/* =====================================================
@@ -656,12 +816,15 @@ export default function KategoriSampahPage() {
       ===================================================== */}
 
       {detailData && (
+
         <DetailKategori
           data={detailData}
+
           onClose={() =>
             setDetailData(null)
           }
         />
+
       )}
 
       {/* =====================================================
@@ -669,17 +832,22 @@ export default function KategoriSampahPage() {
       ===================================================== */}
 
       {deleteData && (
+
         <DeleteKategori
           data={deleteData}
+
           onClose={() =>
             setDeleteData(null)
           }
+
           onSuccess={() => {
             setDeleteData(null);
             getData();
           }}
         />
+
       )}
+
     </div>
   );
 }

@@ -110,10 +110,21 @@ export default function AdminLoginPage() {
       // SIMPAN TOKEN COOKIE
       // =========================
 
-      document.cookie =
-        `token=${encodeURIComponent(data.token)}; ` +
-        `path=/; ` +
-        `max-age=${60 * 60 * 24}; `;
+      // =========================
+// SIMPAN TOKEN COOKIE
+// =========================
+
+document.cookie =
+  `bank_sampah_token=${encodeURIComponent(data.token)}; ` +
+  `path=/; ` +
+  `max-age=${60 * 60 * 24}; ` +
+  `SameSite=Lax;`;
+
+document.cookie =
+  `bank_sampah_role=${encodeURIComponent(data.role || "ADMIN")}; ` +
+  `path=/; ` +
+  `max-age=${60 * 60 * 24}; ` +
+  `SameSite=Lax;`;
 
       // =========================
       // MASUK DASHBOARD ADMIN

@@ -49,7 +49,7 @@ const menuItems = [
   },
   {
     label: "Akun",
-    path: "/nasabah/profile",
+    path: "/nasabah/akun",
     icon: UserCircle,
   },
 ];

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import VerifySetorSampah from "./verify";
+import DetailSetorSampah from "./detail";
 
 type StatusSetor =
   | "menunggu_konfirmasi"
@@ -72,6 +73,7 @@ function getToken() {
     localStorage.getItem("token") ||
     localStorage.getItem("access_token") ||
     localStorage.getItem("accessToken") ||
+    localStorage.getItem("accesstoken") ||
     ""
   );
 }
@@ -112,9 +114,7 @@ function formatTanggal(tanggal: string) {
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("id-ID").format(
-    value || 0
-  );
+  return new Intl.NumberFormat("id-ID").format(value || 0);
 }
 
 function StatusBadge({
@@ -170,10 +170,22 @@ export default function SetorSampahPage() {
   const searchParams = useSearchParams();
 
   /*
-   * Kalau ada ?verify=ID,
-   * halaman ini akan menampilkan verify.tsx
+   * =========================================================
+   * URL MODE
+   * =========================================================
+   *
+   * List:
+   * /admin/setor-sampah
+   *
+   * Detail:
+   * /admin/setor-sampah?id=ID
+   *
+   * Verify:
+   * /admin/setor-sampah?verify=ID
    */
+
   const verifyId = searchParams.get("verify");
+  const detailId = searchParams.get("id");
 
   const [data, setData] = useState<SetorSampah[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,6 +210,14 @@ export default function SetorSampahPage() {
         );
       }
 
+      const token = getToken();
+
+      if (!token) {
+        throw new Error(
+          "Token autentikasi tidak ditemukan. Silakan login kembali."
+        );
+      }
+
       const params = new URLSearchParams();
 
       if (status !== "semua") {
@@ -217,9 +237,10 @@ export default function SetorSampahPage() {
         {
           method: "GET",
           headers: {
+            Accept: "application/json",
             "Content-Type": "application/json",
             "x-app-key": getAppKey(),
-            Authorization: `Bearer ${getToken()}`,
+            Authorization: `Bearer ${token}`,
           },
           cache: "no-store",
         }
@@ -231,10 +252,7 @@ export default function SetorSampahPage() {
       if (!contentType?.includes("application/json")) {
         const text = await response.text();
 
-        console.error(
-          "Response bukan JSON:",
-          text
-        );
+        console.error("Response bukan JSON:", text);
 
         throw new Error(
           `Server mengembalikan response tidak valid (${response.status}).`
@@ -267,20 +285,19 @@ export default function SetorSampahPage() {
 
   useEffect(() => {
     /*
-     * Saat sedang membuka verify,
-     * tidak perlu mengambil ulang list.
+     * Kalau sedang membuka detail atau verify,
+     * jangan fetch list lagi.
      */
-    if (verifyId) {
+    if (verifyId || detailId) {
+      setLoading(false);
       return;
     }
 
     fetchData();
-  }, [status, bulan, verifyId]);
+  }, [status, bulan, verifyId, detailId]);
 
   const filteredData = useMemo(() => {
-    const keyword = search
-      .toLowerCase()
-      .trim();
+    const keyword = search.toLowerCase().trim();
 
     if (!keyword) {
       return data;
@@ -310,37 +327,51 @@ export default function SetorSampahPage() {
     totalPages
   );
 
-  const paginatedData =
-    filteredData.slice(
-      (currentPage - 1) *
-        ITEMS_PER_PAGE,
-      currentPage * ITEMS_PER_PAGE
-    );
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const summary = {
     total: data.length,
 
     menunggu: data.filter(
       (item) =>
-        item.status ===
-        "menunggu_konfirmasi"
+        item.status === "menunggu_konfirmasi"
     ).length,
 
     selesai: data.filter(
-      (item) =>
-        item.status === "selesai"
+      (item) => item.status === "selesai"
     ).length,
 
     ditolak: data.filter(
-      (item) =>
-        item.status === "ditolak"
+      (item) => item.status === "ditolak"
     ).length,
   };
 
   /*
-   * ============================
+   * =========================================================
+   * MODE DETAIL
+   * =========================================================
+   *
+   * URL:
+   * /admin/setor-sampah?id=ID
+   *
+   * detail.tsx adalah COMPONENT,
+   * bukan folder/page route.
+   */
+  if (detailId) {
+    return (
+      <DetailSetorSampah
+        id={detailId}
+      />
+    );
+  }
+
+  /*
+   * =========================================================
    * MODE VERIFIKASI
-   * ============================
+   * =========================================================
    *
    * URL:
    * /admin/setor-sampah?verify=ID
@@ -350,18 +381,23 @@ export default function SetorSampahPage() {
       <VerifySetorSampah
         id={verifyId}
         onBack={() =>
-          router.push(
-            "/admin/setor-sampah"
-          )
+          router.push("/admin/setor-sampah")
         }
       />
     );
   }
 
+  /*
+   * =========================================================
+   * HALAMAN LIST
+   * =========================================================
+   */
+
   return (
     <main className="min-h-screen bg-[#f7f3ed] px-5 py-7 text-[#403c36] md:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        {/* ================= HEADER ================= */}
+
+        {/* HEADER */}
         <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm text-[#8b8277]">
@@ -385,8 +421,9 @@ export default function SetorSampahPage() {
           </div>
         </div>
 
-        {/* ================= SUMMARY ================= */}
+        {/* SUMMARY */}
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+
           {/* TOTAL */}
           <div className="rounded-2xl border border-[#e8e0d6] bg-[#fffdf9] p-5 shadow-[0_4px_20px_rgba(86,72,52,0.04)]">
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#eee7dc] text-[#766d61]">
@@ -448,11 +485,13 @@ export default function SetorSampahPage() {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/* TABLE */}
         <section className="overflow-hidden rounded-2xl border border-[#e8e0d6] bg-[#fffdf9] shadow-[0_6px_25px_rgba(86,72,52,0.05)]">
+
           {/* TOOLBAR */}
           <div className="border-b border-[#eee7de] p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
               {/* SEARCH */}
               <div className="relative w-full lg:max-w-md">
                 <Search
@@ -464,9 +503,7 @@ export default function SetorSampahPage() {
                   type="text"
                   value={search}
                   onChange={(e) => {
-                    setSearch(
-                      e.target.value
-                    );
+                    setSearch(e.target.value);
                     setPage(1);
                   }}
                   placeholder="Cari kode setor, nama nasabah..."
@@ -476,6 +513,7 @@ export default function SetorSampahPage() {
 
               {/* FILTER */}
               <div className="flex flex-col gap-3 sm:flex-row">
+
                 <div className="relative">
                   <Filter
                     size={15}
@@ -484,20 +522,17 @@ export default function SetorSampahPage() {
 
                   <select
                     value={status}
-                    onChange={(e) =>
-                      setStatus(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => {
+                      setStatus(e.target.value);
+                      setPage(1);
+                    }}
                     className="h-11 w-full appearance-none rounded-xl border border-[#e5ddd3] bg-[#faf7f2] pl-9 pr-9 text-sm text-[#5d574f] outline-none focus:border-[#a6b297] sm:w-52"
                   >
                     {STATUS_OPTIONS.map(
                       (item) => (
                         <option
                           key={item.value}
-                          value={
-                            item.value
-                          }
+                          value={item.value}
                         >
                           {item.label}
                         </option>
@@ -515,11 +550,10 @@ export default function SetorSampahPage() {
                   <input
                     type="month"
                     value={bulan}
-                    onChange={(e) =>
-                      setBulan(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => {
+                      setBulan(e.target.value);
+                      setPage(1);
+                    }}
                     className="h-11 w-full rounded-xl border border-[#e5ddd3] bg-[#faf7f2] pl-9 pr-3 text-sm text-[#5d574f] outline-none focus:border-[#a6b297] sm:w-44"
                   />
                 </div>
@@ -537,8 +571,10 @@ export default function SetorSampahPage() {
           {/* TABLE */}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[850px]">
+
               <thead>
                 <tr className="border-b border-[#eee7de] bg-[#faf7f2] text-left">
+
                   <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wide text-[#81786d]">
                     No
                   </th>
@@ -574,10 +610,10 @@ export default function SetorSampahPage() {
               </thead>
 
               <tbody>
+
+                {/* LOADING */}
                 {loading ? (
-                  Array.from({
-                    length: 6,
-                  }).map(
+                  Array.from({ length: 6 }).map(
                     (_, index) => (
                       <tr
                         key={index}
@@ -585,35 +621,27 @@ export default function SetorSampahPage() {
                       >
                         {Array.from({
                           length: 8,
-                        }).map(
-                          (
-                            _,
-                            cell
-                          ) => (
-                            <td
-                              key={
-                                cell
-                              }
-                              className="px-4 py-5"
-                            >
-                              <div className="h-4 animate-pulse rounded bg-[#eee8df]" />
-                            </td>
-                          )
-                        )}
+                        }).map((_, cell) => (
+                          <td
+                            key={cell}
+                            className="px-4 py-5"
+                          >
+                            <div className="h-4 animate-pulse rounded bg-[#eee8df]" />
+                          </td>
+                        ))}
                       </tr>
                     )
                   )
-                ) : paginatedData.length ===
-                  0 ? (
+                ) : paginatedData.length === 0 ? (
+
+                  /* EMPTY */
                   <tr>
                     <td
                       colSpan={8}
                       className="px-6 py-16 text-center"
                     >
                       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eee8df] text-[#8a8175]">
-                        <Recycle
-                          size={25}
-                        />
+                        <Recycle size={25} />
                       </div>
 
                       <h3 className="mt-4 font-medium text-[#504a42]">
@@ -628,58 +656,59 @@ export default function SetorSampahPage() {
                       </p>
                     </td>
                   </tr>
+
                 ) : (
+
+                  /* DATA */
                   paginatedData.map(
-                    (
-                      item,
-                      index
-                    ) => (
+                    (item, index) => (
                       <tr
                         key={item.id}
                         className="border-b border-[#f0eae2] transition hover:bg-[#fcfaf6]"
                       >
+
+                        {/* NO */}
                         <td className="px-6 py-4 text-sm text-[#8d857a]">
-                          {(currentPage -
-                            1) *
+                          {(currentPage - 1) *
                             ITEMS_PER_PAGE +
                             index +
                             1}
                         </td>
 
+                        {/* KODE */}
                         <td className="px-4 py-4">
                           <span className="font-medium text-[#4b4740]">
-                            {
-                              item.kodeSetor
-                            }
+                            {item.kodeSetor}
                           </span>
                         </td>
 
+                        {/* NASABAH */}
                         <td className="px-4 py-4">
                           <div>
                             <p className="text-sm font-medium text-[#4b4740]">
                               {
-                                item
-                                  .nasabah
+                                item.nasabah
                                   .namaNasabah
                               }
                             </p>
 
                             <p className="mt-0.5 text-xs text-[#9a9186]">
                               {
-                                item
-                                  .nasabah
+                                item.nasabah
                                   .telp
                               }
                             </p>
                           </div>
                         </td>
 
+                        {/* TANGGAL */}
                         <td className="px-4 py-4 text-sm text-[#756d63]">
                           {formatTanggal(
                             item.tanggal
                           )}
                         </td>
 
+                        {/* BERAT */}
                         <td className="px-4 py-4 text-sm font-medium text-[#575148]">
                           {formatNumber(
                             item.totalBeratKg
@@ -687,34 +716,33 @@ export default function SetorSampahPage() {
                           kg
                         </td>
 
+                        {/* POIN */}
                         <td className="px-4 py-4 text-sm font-medium text-[#647556]">
                           {formatNumber(
                             item.totalPoin
                           )}
                         </td>
 
+                        {/* STATUS */}
                         <td className="px-4 py-4">
                           <StatusBadge
-                            status={
-                              item.status
-                            }
+                            status={item.status}
                           />
                         </td>
 
                         {/* AKSI */}
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
+
                             {/* DETAIL */}
                             <Link
-                              href={`/admin/setor-sampah/detail?id=${encodeURIComponent(
+                              href={`/admin/setor-sampah?id=${encodeURIComponent(
                                 item.id
                               )}`}
                               title="Lihat detail"
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e4ddd3] bg-[#faf7f2] text-[#756d63] transition hover:border-[#c9c1b5] hover:bg-[#f3eee7]"
                             >
-                              <Eye
-                                size={16}
-                              />
+                              <Eye size={16} />
                             </Link>
 
                             {/* VERIFIKASI */}
@@ -732,10 +760,7 @@ export default function SetorSampahPage() {
                                 title="Verifikasi"
                                 className="flex h-9 items-center gap-1.5 rounded-lg bg-[#718467] px-3 text-xs font-medium text-white transition hover:bg-[#607456]"
                               >
-                                <Scale
-                                  size={15}
-                                />
-
+                                <Scale size={15} />
                                 Verifikasi
                               </button>
                             )}
@@ -753,11 +778,11 @@ export default function SetorSampahPage() {
           {!loading &&
             filteredData.length > 0 && (
               <div className="flex flex-col gap-3 border-t border-[#eee7de] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+
                 <p className="text-xs text-[#938a7f]">
                   Menampilkan{" "}
                   <span className="font-medium text-[#625b52]">
-                    {(currentPage -
-                      1) *
+                    {(currentPage - 1) *
                       ITEMS_PER_PAGE +
                       1}
                   </span>{" "}
@@ -771,42 +796,33 @@ export default function SetorSampahPage() {
                   </span>{" "}
                   dari{" "}
                   <span className="font-medium text-[#625b52]">
-                    {
-                      filteredData.length
-                    }
+                    {filteredData.length}
                   </span>{" "}
                   data
                 </p>
 
                 <div className="flex items-center gap-1.5">
+
+                  {/* PREVIOUS */}
                   <button
                     type="button"
                     onClick={() =>
-                      setPage(
-                        (prev) =>
-                          Math.max(
-                            1,
-                            prev - 1
-                          )
+                      setPage((prev) =>
+                        Math.max(1, prev - 1)
                       )
                     }
-                    disabled={
-                      currentPage === 1
-                    }
+                    disabled={currentPage === 1}
                     className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e4ddd3] text-[#756d63] transition hover:bg-[#f4efe8] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <ChevronLeft
-                      size={16}
-                    />
+                    <ChevronLeft size={16} />
                   </button>
 
+                  {/* PAGE NUMBERS */}
                   {Array.from(
                     {
-                      length:
-                        totalPages,
+                      length: totalPages,
                     },
-                    (_, index) =>
-                      index + 1
+                    (_, index) => index + 1
                   )
                     .slice(
                       Math.max(
@@ -818,54 +834,41 @@ export default function SetorSampahPage() {
                         currentPage + 2
                       )
                     )
-                    .map(
-                      (
-                        pageNumber
-                      ) => (
-                        <button
-                          type="button"
-                          key={
-                            pageNumber
-                          }
-                          onClick={() =>
-                            setPage(
-                              pageNumber
-                            )
-                          }
-                          className={`h-9 min-w-9 rounded-lg border px-3 text-xs font-medium transition ${
-                            currentPage ===
-                            pageNumber
-                              ? "border-[#718467] bg-[#718467] text-white"
-                              : "border-[#e4ddd3] text-[#756d63] hover:bg-[#f4efe8]"
-                          }`}
-                        >
-                          {
-                            pageNumber
-                          }
-                        </button>
-                      )
-                    )}
+                    .map((pageNumber) => (
+                      <button
+                        type="button"
+                        key={pageNumber}
+                        onClick={() =>
+                          setPage(pageNumber)
+                        }
+                        className={`h-9 min-w-9 rounded-lg border px-3 text-xs font-medium transition ${
+                          currentPage ===
+                          pageNumber
+                            ? "border-[#718467] bg-[#718467] text-white"
+                            : "border-[#e4ddd3] text-[#756d63] hover:bg-[#f4efe8]"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
 
+                  {/* NEXT */}
                   <button
                     type="button"
                     onClick={() =>
-                      setPage(
-                        (prev) =>
-                          Math.min(
-                            totalPages,
-                            prev + 1
-                          )
+                      setPage((prev) =>
+                        Math.min(
+                          totalPages,
+                          prev + 1
+                        )
                       )
                     }
                     disabled={
-                      currentPage ===
-                      totalPages
+                      currentPage === totalPages
                     }
                     className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e4ddd3] text-[#756d63] transition hover:bg-[#f4efe8] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <ChevronRight
-                      size={16}
-                    />
+                    <ChevronRight size={16} />
                   </button>
                 </div>
               </div>
