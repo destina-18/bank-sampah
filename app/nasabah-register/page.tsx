@@ -1,6 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -8,15 +12,21 @@ export default function NasabahRegisterPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    nama: "",
-    telepon: "",
+    namaNasabah: "",
+    alamat: "",
+    telp: "",
     username: "",
     password: "",
     konfirmasiPassword: "",
   });
 
+  const [foto, setFoto] = useState<File | null>(null);
+
   const [setuju, setSetuju] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
@@ -24,8 +34,23 @@ export default function NasabahRegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // =====================================================
+  // ENV
+  // =====================================================
+
+  const API_BASE_URL = (
+    process.env.NEXT_PUBLIC_API_URL || ""
+  ).replace(/\/+$/, "");
+
+  const APP_KEY =
+    process.env.NEXT_PUBLIC_APP_KEY || "";
+
+  // =====================================================
+  // HANDLE INPUT
+  // =====================================================
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
 
@@ -33,7 +58,63 @@ export default function NasabahRegisterPage() {
       ...prev,
       [name]: value,
     }));
+
+    if (error) {
+      setError("");
+    }
   };
+
+  // =====================================================
+  // HANDLE FOTO
+  // =====================================================
+
+  const handleFotoChange = (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0] || null;
+
+    if (!file) {
+      setFoto(null);
+      return;
+    }
+
+    // Validasi tipe file
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError(
+        "Foto harus berformat JPG atau PNG."
+      );
+
+      e.target.value = "";
+      setFoto(null);
+      return;
+    }
+
+    // Validasi ukuran maksimal 5 MB
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      setError(
+        "Ukuran foto maksimal 5 MB."
+      );
+
+      e.target.value = "";
+      setFoto(null);
+      return;
+    }
+
+    setError("");
+    setFoto(file);
+  };
+
+  // =====================================================
+  // REGISTER
+  // =====================================================
 
   const handleRegister = async (
     e: FormEvent<HTMLFormElement>
@@ -43,28 +124,70 @@ export default function NasabahRegisterPage() {
     setError("");
     setSuccess("");
 
-    // =========================
-    // VALIDASI
-    // =========================
+    // ===================================================
+    // CEK ENV
+    // ===================================================
 
-    if (
-      !form.nama.trim() ||
-      !form.telepon.trim() ||
-      !form.username.trim() ||
-      !form.password ||
-      !form.konfirmasiPassword
-    ) {
-      setError("Semua data wajib diisi.");
+    if (!API_BASE_URL) {
+      setError(
+        "NEXT_PUBLIC_API_URL belum tersedia. Periksa file .env.local."
+      );
+      return;
+    }
+
+    if (!APP_KEY) {
+      setError(
+        "NEXT_PUBLIC_APP_KEY belum tersedia. Periksa file .env.local."
+      );
+      return;
+    }
+
+    // ===================================================
+    // VALIDASI
+    // ===================================================
+
+    if (!form.namaNasabah.trim()) {
+      setError("Nama nasabah wajib diisi.");
+      return;
+    }
+
+    if (!form.alamat.trim()) {
+      setError("Alamat wajib diisi.");
+      return;
+    }
+
+    if (!form.telp.trim()) {
+      setError("Nomor telepon wajib diisi.");
+      return;
+    }
+
+    if (!form.username.trim()) {
+      setError("Username wajib diisi.");
+      return;
+    }
+
+    if (!form.password) {
+      setError("Password wajib diisi.");
+      return;
+    }
+
+    if (!form.konfirmasiPassword) {
+      setError(
+        "Konfirmasi password wajib diisi."
+      );
       return;
     }
 
     if (form.password.length < 6) {
-      setError("Password minimal 6 karakter.");
+      setError(
+        "Password minimal 6 karakter."
+      );
       return;
     }
 
     if (
-      form.password !== form.konfirmasiPassword
+      form.password !==
+      form.konfirmasiPassword
     ) {
       setError(
         "Password dan konfirmasi password tidak sama."
@@ -79,54 +202,117 @@ export default function NasabahRegisterPage() {
       return;
     }
 
-    // =========================
-    // REGISTER
-    // =========================
+    // ===================================================
+    // REQUEST
+    // ===================================================
 
     try {
       setLoading(true);
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_API_URL;
+      const endpoint =
+        `${API_BASE_URL}/api/v1/auth/nasabah/register`;
 
-      if (!baseUrl) {
-        throw new Error(
-          "NEXT_PUBLIC_BASE_API_URL belum tersedia."
+      console.log(
+        "================================="
+      );
+      console.log(
+        "REGISTER NASABAH"
+      );
+      console.log(
+        "Endpoint:",
+        endpoint
+      );
+      console.log(
+        "Has App Key:",
+        Boolean(APP_KEY)
+      );
+      console.log(
+        "Has Foto:",
+        Boolean(foto)
+      );
+      console.log(
+        "================================="
+      );
+
+      // =================================================
+      // FORM DATA
+      // =================================================
+
+      const formData = new FormData();
+
+      formData.append(
+        "username",
+        form.username.trim()
+      );
+
+      formData.append(
+        "password",
+        form.password
+      );
+
+      formData.append(
+        "namaNasabah",
+        form.namaNasabah.trim()
+      );
+
+      formData.append(
+        "alamat",
+        form.alamat.trim()
+      );
+
+      formData.append(
+        "telp",
+        form.telp.trim()
+      );
+
+      // Foto OPTIONAL sesuai Swagger
+      if (foto) {
+        formData.append(
+          "foto",
+          foto
         );
       }
 
+      // =================================================
+      // FETCH
+      // =================================================
+
       const response = await fetch(
-        `${baseUrl}/auth/register`,
+        endpoint,
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "x-app-key": APP_KEY,
           },
-          body: JSON.stringify({
-            name: form.nama,
-            phone: form.telepon,
-            username: form.username,
-            password: form.password,
-          }),
+
+          // JANGAN tambahkan Content-Type di sini.
+          // Browser akan otomatis membuat:
+          // multipart/form-data; boundary=...
+          body: formData,
         }
       );
 
-      // =========================
-      // CEK RESPONSE
-      // =========================
+      // =================================================
+      // RESPONSE
+      // =================================================
 
       const contentType =
-        response.headers.get("content-type");
+        response.headers.get(
+          "content-type"
+        ) || "";
 
-      let data: any;
+      let data: any = null;
 
       if (
-        contentType &&
-        contentType.includes("application/json")
+        contentType.includes(
+          "application/json"
+        )
       ) {
         data = await response.json();
       } else {
-        const text = await response.text();
+        const text =
+          await response.text();
 
         console.error(
           "Response bukan JSON:",
@@ -138,46 +324,92 @@ export default function NasabahRegisterPage() {
         );
       }
 
-      // =========================
+      console.log(
+        "REGISTER RESPONSE:",
+        {
+          status:
+            response.status,
+          data,
+        }
+      );
+
+      // =================================================
       // ERROR API
-      // =========================
+      // =================================================
 
       if (!response.ok) {
         let message =
           data?.message ||
           data?.error ||
-          "Registrasi gagal.";
+          data?.data?.message ||
+          `Registrasi gagal (${response.status}).`;
 
-        if (Array.isArray(message)) {
-          message = message.join(", ");
+        if (
+          Array.isArray(message)
+        ) {
+          message =
+            message.join(", ");
         }
 
-        throw new Error(message);
+        if (
+          typeof message ===
+            "object" &&
+          message !== null
+        ) {
+          message =
+            JSON.stringify(
+              message
+            );
+        }
+
+        throw new Error(
+          message
+        );
       }
 
-      // =========================
+      // =================================================
       // BERHASIL
-      // =========================
+      // =================================================
 
       setSuccess(
-        "Akun berhasil dibuat. Mengarahkan ke halaman login..."
+        data?.message ||
+          "Registrasi nasabah berhasil. Mengarahkan ke halaman login..."
       );
 
+      // Reset form
       setForm({
-        nama: "",
-        telepon: "",
+        namaNasabah: "",
+        alamat: "",
+        telp: "",
         username: "",
         password: "",
         konfirmasiPassword: "",
       });
 
+      setFoto(null);
       setSetuju(false);
 
+      // Reset input foto
+      const fotoInput =
+        document.getElementById(
+          "foto"
+        ) as HTMLInputElement | null;
+
+      if (fotoInput) {
+        fotoInput.value = "";
+      }
+
+      // Redirect
       setTimeout(() => {
-        router.push("/nasabah-login");
+        router.push(
+          "/nasabah-login"
+        );
       }, 1500);
     } catch (err: any) {
-      console.error("REGISTER ERROR:", err);
+      console.error(
+        "REGISTER ERROR:",
+        err
+      );
 
       setError(
         err?.message ||
@@ -187,6 +419,10 @@ export default function NasabahRegisterPage() {
       setLoading(false);
     }
   };
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <main className="min-h-screen bg-[#F3EADF] flex items-center justify-center px-5 py-8">
@@ -202,7 +438,9 @@ export default function NasabahRegisterPage() {
             <div className="flex justify-start mb-3">
               <button
                 type="button"
-                onClick={() => router.back()}
+                onClick={() =>
+                  router.back()
+                }
                 className="w-9 h-9 rounded-full flex items-center justify-center text-[#77736D] hover:bg-[#F7F1EA] transition"
                 aria-label="Kembali"
               >
@@ -224,7 +462,6 @@ export default function NasabahRegisterPage() {
 
             {/* AVATAR */}
             <div className="mx-auto mb-4 w-[76px] h-[76px] rounded-full bg-[#E9E4DE] flex items-center justify-center">
-
               <svg
                 width="48"
                 height="48"
@@ -243,7 +480,6 @@ export default function NasabahRegisterPage() {
                   fill="#A7A29B"
                 />
               </svg>
-
             </div>
 
             <h1 className="text-[22px] font-semibold text-[#4B4741]">
@@ -253,7 +489,6 @@ export default function NasabahRegisterPage() {
             <p className="mt-1 text-sm text-[#9A948C]">
               Buat akun untuk mulai menggunakan Bank Sampah
             </p>
-
           </div>
 
           {/* FORM */}
@@ -262,45 +497,81 @@ export default function NasabahRegisterPage() {
             className="space-y-3.5"
           >
 
-            {/* NAMA */}
+            {/* NAMA NASABAH */}
             <div>
               <label
-                htmlFor="nama"
+                htmlFor="namaNasabah"
                 className="sr-only"
               >
-                Nama Lengkap
+                User Name
               </label>
 
               <input
-                id="nama"
-                name="nama"
+                id="namaNasabah"
+                name="namaNasabah"
                 type="text"
-                value={form.nama}
-                onChange={handleChange}
+                value={
+                  form.namaNasabah
+                }
+                onChange={
+                  handleChange
+                }
                 placeholder="Nama Lengkap"
                 autoComplete="name"
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10"
+                disabled={loading}
+                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
+              />
+            </div>
+
+            {/* ALAMAT */}
+            <div>
+              <label
+                htmlFor="alamat"
+                className="sr-only"
+              >
+                Alamat
+              </label>
+
+              <textarea
+                id="alamat"
+                name="alamat"
+                value={
+                  form.alamat
+                }
+                onChange={
+                  handleChange
+                }
+                placeholder="Alamat Tinggal"
+                rows={3}
+                disabled={loading}
+                className="w-full min-h-[75px] rounded-[9px] border border-[#DED8D0] bg-white px-4 py-3 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none resize-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
             </div>
 
             {/* TELEPON */}
             <div>
               <label
-                htmlFor="telepon"
+                htmlFor="telp"
                 className="sr-only"
               >
                 No. Telepon
               </label>
 
               <input
-                id="telepon"
-                name="telepon"
+                id="telp"
+                name="telp"
                 type="tel"
-                value={form.telepon}
-                onChange={handleChange}
+                value={
+                  form.telp
+                }
+                onChange={
+                  handleChange
+                }
                 placeholder="No. Telepon"
                 autoComplete="tel"
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10"
+                inputMode="tel"
+                disabled={loading}
+                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
             </div>
 
@@ -310,18 +581,23 @@ export default function NasabahRegisterPage() {
                 htmlFor="username"
                 className="sr-only"
               >
-                Username
+                Nama
               </label>
 
               <input
                 id="username"
                 name="username"
                 type="text"
-                value={form.username}
-                onChange={handleChange}
+                value={
+                  form.username
+                }
+                onChange={
+                  handleChange
+                }
                 placeholder="Username"
                 autoComplete="username"
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10"
+                disabled={loading}
+                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
             </div>
 
@@ -342,26 +618,28 @@ export default function NasabahRegisterPage() {
                     ? "text"
                     : "password"
                 }
-                value={form.password}
-                onChange={handleChange}
+                value={
+                  form.password
+                }
+                onChange={
+                  handleChange
+                }
                 placeholder="Password"
                 autoComplete="new-password"
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 pr-11 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10"
+                disabled={loading}
+                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 pr-11 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
 
               <button
                 type="button"
                 onClick={() =>
                   setShowPassword(
-                    (prev) => !prev
+                    (prev) =>
+                      !prev
                   )
                 }
+                disabled={loading}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99928A] hover:text-[#6E675F] transition"
-                aria-label={
-                  showPassword
-                    ? "Sembunyikan password"
-                    : "Tampilkan password"
-                }
               >
                 {showPassword ? (
                   <svg
@@ -421,9 +699,12 @@ export default function NasabahRegisterPage() {
                 value={
                   form.konfirmasiPassword
                 }
-                onChange={handleChange}
+                onChange={
+                  handleChange
+                }
                 placeholder="Konfirmasi Password"
                 autoComplete="new-password"
+                disabled={loading}
                 className={`w-full h-[45px] rounded-[9px] border bg-white px-4 pr-11 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition ${
                   form.konfirmasiPassword &&
                   form.password !==
@@ -437,15 +718,12 @@ export default function NasabahRegisterPage() {
                 type="button"
                 onClick={() =>
                   setShowConfirmPassword(
-                    (prev) => !prev
+                    (prev) =>
+                      !prev
                   )
                 }
+                disabled={loading}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99928A] hover:text-[#6E675F] transition"
-                aria-label={
-                  showConfirmPassword
-                    ? "Sembunyikan password"
-                    : "Tampilkan password"
-                }
               >
                 {showConfirmPassword ? (
                   <svg
@@ -485,15 +763,48 @@ export default function NasabahRegisterPage() {
               </button>
             </div>
 
-            {/* CHECK PASSWORD */}
+            {/* PASSWORD MATCH */}
             {form.konfirmasiPassword &&
               form.password !==
                 form.konfirmasiPassword && (
                 <p className="text-xs text-[#C47777] px-1">
-                  Password dan konfirmasi password
-                  tidak sama.
+                  Password dan konfirmasi
+                  password tidak sama.
                 </p>
               )}
+
+            {/* FOTO */}
+            <div>
+              <label
+                htmlFor="foto"
+                className="block text-xs text-[#858078] mb-1.5"
+              >
+                Foto Profil
+                <span className="text-[#AAA49C]">
+                  {" "}
+                  (opsional)
+                </span>
+              </label>
+
+              <input
+                id="foto"
+                name="foto"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={
+                  handleFotoChange
+                }
+                disabled={loading}
+                className="w-full text-xs text-[#77736D] file:mr-3 file:rounded-[8px] file:border-0 file:bg-[#EEE8E1] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#6F675F] hover:file:bg-[#E5DED6] disabled:opacity-60"
+              />
+
+              {foto && (
+                <p className="mt-1.5 text-[11px] text-[#8A837B] truncate">
+                  File dipilih:{" "}
+                  {foto.name}
+                </p>
+              )}
+            </div>
 
             {/* TERMS */}
             <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
@@ -501,8 +812,11 @@ export default function NasabahRegisterPage() {
                 type="checkbox"
                 checked={setuju}
                 onChange={(e) =>
-                  setSetuju(e.target.checked)
+                  setSetuju(
+                    e.target.checked
+                  )
                 }
+                disabled={loading}
                 className="mt-[2px] h-4 w-4 shrink-0 accent-[#8A9B82] cursor-pointer"
               />
 
@@ -535,7 +849,7 @@ export default function NasabahRegisterPage() {
               </div>
             )}
 
-            {/* BUTTON */}
+            {/* DAFTAR */}
             <button
               type="submit"
               disabled={loading}
@@ -566,7 +880,6 @@ export default function NasabahRegisterPage() {
         <p className="text-center text-[11px] text-[#AAA39B] mt-5">
           Bank Sampah
         </p>
-
       </div>
     </main>
   );

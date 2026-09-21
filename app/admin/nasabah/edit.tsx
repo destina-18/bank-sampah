@@ -126,7 +126,11 @@ function formatTanggalUntukInput(
    * Kalau sudah format:
    * YYYY-MM-DD
    */
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
+  ) {
     return value;
   }
 
@@ -143,11 +147,17 @@ function formatTanggalUntukInput(
    */
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return "";
   }
 
-  return date.toISOString().split("T")[0];
+  return date
+    .toISOString()
+    .split("T")[0];
 }
 
 /* =========================================================
@@ -216,9 +226,14 @@ export default function EditNasabah({
     /*
      * Data nomor telepon dari response API:
      * telp
+     *
+     * Bersihkan data lama agar hanya angka.
      */
     setTelp(
-      data.telp || ""
+      (data.telp || "").replace(
+        /\D/g,
+        ""
+      )
     );
 
     /*
@@ -254,7 +269,9 @@ export default function EditNasabah({
         preview &&
         preview.startsWith("blob:")
       ) {
-        URL.revokeObjectURL(preview);
+        URL.revokeObjectURL(
+          preview
+        );
       }
     };
   }, [preview]);
@@ -296,7 +313,11 @@ export default function EditNasabah({
       "image/webp",
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
       onError(
         "Foto harus berformat JPG, PNG, atau WebP."
       );
@@ -371,6 +392,39 @@ export default function EditNasabah({
       return;
     }
 
+    /*
+     * Pastikan hanya angka.
+     */
+    if (!/^\d+$/.test(telp)) {
+      onError(
+        "Nomor telepon hanya boleh berisi angka."
+      );
+
+      return;
+    }
+
+    /*
+     * Minimal 10 digit.
+     */
+    if (telp.length < 10) {
+      onError(
+        "Nomor telepon minimal 10 digit."
+      );
+
+      return;
+    }
+
+    /*
+     * Maksimal 15 digit.
+     */
+    if (telp.length > 15) {
+      onError(
+        "Nomor telepon maksimal 15 digit."
+      );
+
+      return;
+    }
+
     /* =====================================================
        VALIDASI ALAMAT
        ===================================================== */
@@ -418,8 +472,6 @@ export default function EditNasabah({
         new FormData();
 
       /*
-       * PENTING:
-       *
        * UI:
        * namaNasabah
        *
@@ -432,17 +484,18 @@ export default function EditNasabah({
       );
 
       /*
-       * PENTING:
-       *
        * UI:
        * telp
        *
        * API meminta:
        * noTelepon
+       *
+       * Tetap string di FormData,
+       * tetapi isinya HANYA angka.
        */
       formData.append(
         "noTelepon",
-        telp.trim()
+        telp
       );
 
       /*
@@ -513,7 +566,17 @@ export default function EditNasabah({
 
       console.log(
         "Telepon:",
-        telp.trim()
+        telp
+      );
+
+      console.log(
+        "Telepon hanya angka:",
+        /^\d+$/.test(telp)
+      );
+
+      console.log(
+        "Jumlah digit:",
+        telp.length
       );
 
       console.log(
@@ -947,14 +1010,55 @@ export default function EditNasabah({
               NOMOR TELEPON
               ================================================= */}
 
-          <Field
-            label="Nomor Telepon"
-            value={telp}
-            onChange={setTelp}
-            required
-            placeholder="081234567890"
-            disabled={loading}
-          />
+          <div>
+            <label className="mb-2 block text-[11px] font-semibold text-[#66716a]">
+              Nomor Telepon
+
+              <span className="ml-1 text-[#a45b5b]">
+                *
+              </span>
+            </label>
+
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={telp}
+              onChange={(event) => {
+                /*
+                 * Hanya izinkan angka.
+                 *
+                 * Contoh:
+                 * 08123abc456
+                 * menjadi:
+                 * 08123456
+                 */
+                const numericValue =
+                  event.target.value.replace(
+                    /\D/g,
+                    ""
+                  );
+
+                /*
+                 * Maksimal 15 digit.
+                 */
+                setTelp(
+                  numericValue.slice(
+                    0,
+                    15
+                  )
+                );
+              }}
+              required
+              disabled={loading}
+              maxLength={15}
+              placeholder="081234567890"
+              className="h-10 w-full rounded-xl border border-[#e5e0d5] bg-white px-3.5 text-[12px] text-[#173c2b] outline-none placeholder:text-[#a3aaa3] focus:border-[#9bbd96] focus:ring-2 focus:ring-[#e5f0e2] disabled:cursor-not-allowed disabled:bg-[#f1f3ed]"
+            />
+
+            <p className="mt-1.5 text-[9px] text-[#a3aaa3]">
+              Nomor telepon hanya boleh menggunakan angka, 10–15 digit.
+            </p>
+          </div>
 
           {/* =================================================
               TANGGAL LAHIR
@@ -1037,7 +1141,6 @@ export default function EditNasabah({
               disabled={loading}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#2f8135] px-5 text-[11px] font-semibold text-white transition hover:bg-[#276d2c] disabled:cursor-not-allowed disabled:opacity-60"
             >
-
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1054,7 +1157,6 @@ export default function EditNasabah({
                   Simpan Perubahan
                 </>
               )}
-
             </button>
 
           </div>

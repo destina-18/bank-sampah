@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
+  Tags,
   Recycle,
   History,
   UserCircle,
@@ -30,7 +31,7 @@ const menuItems = [
   {
     label: "Kategori Sampah",
     path: "/nasabah/kategori-sampah",
-    icon: Recycle,
+    icon: Tags,
   },
   {
     label: "Setor Sampah",
@@ -58,26 +59,28 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // ==========================================
+  // ======================================================
   // LOGOUT
-  // ==========================================
+  // ======================================================
 
   const logout = () => {
-    // ==========================================
-    // 1. HAPUS DATA AUTH DARI LOCAL STORAGE
-    // ==========================================
+    // ====================================================
+    // 1. HAPUS LOCAL STORAGE
+    // ====================================================
 
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("accesstoken");
+
     localStorage.removeItem("appKey");
     localStorage.removeItem("app_key");
+
     localStorage.removeItem("user");
     localStorage.removeItem("role");
 
-    // ==========================================
+    // ====================================================
     // 2. HAPUS COOKIE AUTH NASABAH
-    // ==========================================
+    // ====================================================
 
     document.cookie =
       "bank_sampah_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
@@ -85,9 +88,9 @@ export function AppSidebar() {
     document.cookie =
       "bank_sampah_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
-    // ==========================================
+    // ====================================================
     // 3. HAPUS COOKIE AUTH LAMA / ALTERNATIF
-    // ==========================================
+    // ====================================================
 
     document.cookie =
       "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
@@ -101,16 +104,16 @@ export function AppSidebar() {
     document.cookie =
       "role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
-    // ==========================================
+    // ====================================================
     // 4. KEMBALI KE LANDING PAGE
-    // ==========================================
+    // ====================================================
 
     window.location.replace("/");
   };
 
-  // ==========================================
+  // ======================================================
   // PROFILE NASABAH
-  // ==========================================
+  // ======================================================
 
   const profile = {
     name: "Nasabah",
@@ -122,13 +125,14 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className="border-r border-[#e5e0d5] bg-[#fbfaf7]"
     >
-      {/* ======================================
+      {/* ==================================================
           HEADER
-      ====================================== */}
+      ================================================== */}
 
       <SidebarHeader className="border-b border-[#e8e4da] bg-[#fbfaf7] px-5 py-7">
         <div className="flex items-center gap-3">
-          {/* Logo */}
+
+          {/* LOGO */}
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[#2f8135]">
             <Recycle
               className="h-6 w-6 text-white"
@@ -136,7 +140,7 @@ export function AppSidebar() {
             />
           </div>
 
-          {/* Brand */}
+          {/* BRAND */}
           <div>
             <h1 className="text-[17px] font-bold tracking-tight text-[#173c2b]">
               Bank Sampah
@@ -149,12 +153,13 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      {/* ======================================
+      {/* ==================================================
           MENU
-      ====================================== */}
+      ================================================== */}
 
       <SidebarContent className="bg-[#fbfaf7] px-3 py-5">
         <SidebarGroup>
+
           <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a3aaa3]">
             Menu
           </p>
@@ -165,13 +170,19 @@ export function AppSidebar() {
 
               const active =
                 pathname === item.path ||
-                pathname.startsWith(`${item.path}/`);
+                pathname.startsWith(
+                  `${item.path}/`
+                );
 
               return (
-                <SidebarMenuItem key={item.path}>
+                <SidebarMenuItem
+                  key={item.path}
+                >
                   <SidebarMenuButton
                     tooltip={item.label}
-                    onClick={() => router.push(item.path)}
+                    onClick={() =>
+                      router.push(item.path)
+                    }
                     className={`mb-1 h-11 w-full cursor-pointer rounded-xl px-3.5 text-[13px] font-medium transition-all ${
                       active
                         ? "bg-[#e5f0e2] text-[#2f8135] hover:bg-[#e5f0e2] hover:text-[#2f8135]"
@@ -187,7 +198,9 @@ export function AppSidebar() {
                       strokeWidth={1.8}
                     />
 
-                    <span>{item.label}</span>
+                    <span>
+                      {item.label}
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -196,37 +209,41 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ======================================
+      {/* ==================================================
           FOOTER
-      ====================================== */}
+      ================================================== */}
 
       <SidebarFooter className="border-t border-[#e8e4da] bg-[#fbfaf7] px-3 py-4">
         <SidebarMenu>
-          {/* ==================================
-              PROFILE
-          ================================== */}
+
+          {/* =================================================
+              PROFILE / AKUN
+          ================================================= */}
 
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Akun"
-              onClick={() => router.push("/nasabah/profile")}
+              onClick={() =>
+                router.push("/nasabah/akun")
+              }
               className={`mb-2 h-auto w-full cursor-pointer rounded-xl px-3 py-3 transition-all ${
-                pathname === "/nasabah/profile"
+                pathname === "/nasabah/akun"
                   ? "bg-[#e5f0e2]"
                   : "hover:bg-[#f1f3ed]"
               }`}
             >
-              {/* Avatar */}
+
+              {/* AVATAR */}
               <div
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                  pathname === "/nasabah/profile"
+                  pathname === "/nasabah/akun"
                     ? "bg-[#2f8135]"
                     : "bg-[#e5f0e2]"
                 }`}
               >
                 <UserCircle
                   className={`h-6 w-6 ${
-                    pathname === "/nasabah/profile"
+                    pathname === "/nasabah/akun"
                       ? "text-white"
                       : "text-[#2f8135]"
                   }`}
@@ -234,11 +251,12 @@ export function AppSidebar() {
                 />
               </div>
 
-              {/* Profile Info */}
+              {/* PROFILE INFO */}
               <div className="flex min-w-0 flex-1 flex-col items-start">
+
                 <span
                   className={`w-full truncate text-[13px] font-semibold ${
-                    pathname === "/nasabah/profile"
+                    pathname === "/nasabah/akun"
                       ? "text-[#2f8135]"
                       : "text-[#31443a]"
                   }`}
@@ -249,13 +267,14 @@ export function AppSidebar() {
                 <span className="w-full truncate text-[10px] text-[#8a958e]">
                   {profile.email}
                 </span>
+
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* ==================================
+          {/* =================================================
               LOGOUT
-          ================================== */}
+          ================================================= */}
 
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -268,9 +287,12 @@ export function AppSidebar() {
                 strokeWidth={1.8}
               />
 
-              <span>Keluar</span>
+              <span>
+                Keluar
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

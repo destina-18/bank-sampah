@@ -15,6 +15,15 @@ import {
   Check,
 } from "lucide-react";
 
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || ""
+).replace(/\/+$/, "");
+
+const APP_KEY = process.env.NEXT_PUBLIC_APP_KEY || "";
+
+
+const REGISTER_ENDPOINT = "/api/v1/auth/admin/register";
+
 export default function AdminRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -47,37 +56,34 @@ export default function AdminRegisterPage() {
     setSuccess("");
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     setError("");
     setSuccess("");
 
-    // Validasi nama unit
     if (!form.unitName.trim()) {
       setError("Nama unit bank sampah wajib diisi.");
       return;
     }
 
-    // Validasi nama pengelola
     if (!form.managerName.trim()) {
       setError("Nama pengelola wajib diisi.");
       return;
     }
 
-    // Validasi nomor telepon
     if (!form.phone.trim()) {
       setError("Nomor telepon wajib diisi.");
       return;
     }
 
-    // Validasi username
     if (!form.username.trim()) {
       setError("Username wajib diisi.");
       return;
     }
 
-    // Validasi password
     if (!form.password) {
       setError("Password wajib diisi.");
       return;
@@ -88,7 +94,6 @@ export default function AdminRegisterPage() {
       return;
     }
 
-    // Validasi konfirmasi password
     if (!form.confirmPassword) {
       setError("Konfirmasi password wajib diisi.");
       return;
@@ -99,45 +104,109 @@ export default function AdminRegisterPage() {
       return;
     }
 
-    // Validasi syarat
     if (!form.agree) {
-      setError("Silakan menyetujui Syarat & Ketentuan terlebih dahulu.");
+      setError(
+        "Silakan menyetujui Syarat & Ketentuan terlebih dahulu."
+      );
+      return;
+    }
+
+    if (!API_BASE) {
+      setError(
+        "NEXT_PUBLIC_API_URL belum tersedia. Periksa Environment Variables."
+      );
+      return;
+    }
+
+    if (!APP_KEY) {
+      setError(
+        "NEXT_PUBLIC_APP_KEY belum tersedia. Periksa Environment Variables."
+      );
       return;
     }
 
     try {
       setLoading(true);
 
-      /*
-       * REGISTER API
-       *
-       * Untuk sementara belum dipanggil karena endpoint backend
-       * register admin belum ditentukan.
-       *
-       * Nanti bagian ini bisa diganti menjadi:
-       *
-       * const response = await fetch(
-       *   `${process.env.NEXT_PUBLIC_BASE_API_URL}/auth/register`,
-       *   {
-       *     method: "POST",
-       *     headers: {
-       *       "Content-Type": "application/json",
-       *     },
-       *     body: JSON.stringify({
-       *       unitName: form.unitName,
-       *       managerName: form.managerName,
-       *       phone: form.phone,
-       *       username: form.username,
-       *       password: form.password,
-       *     }),
-       *   }
-       * );
-       */
+      console.log("=================================");
+      console.log("REGISTER ADMIN");
+      console.log("API:", API_BASE);
+      console.log("Endpoint:", REGISTER_ENDPOINT);
+      console.log("=================================");
 
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const response = await fetch(
+        `${API_BASE}${REGISTER_ENDPOINT}`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-app-key": APP_KEY,
+          },
+
+          body: JSON.stringify({
+            username: form.username.trim(),
+            password: form.password,
+            namaUnit: form.unitName.trim(),
+            namaPengelola: form.managerName.trim(),
+            telp: form.phone.trim(),
+          }),
+        }
+      );
+
+      let data: any = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          `Server mengembalikan response yang tidak valid. Status: ${response.status}`
+        );
+      }
+
+      console.log("REGISTER STATUS:", response.status);
+      console.log("REGISTER RESPONSE:", data);
+
+      if (!response.ok || data?.success === false) {
+        let message = "Pendaftaran gagal.";
+
+        if (Array.isArray(data?.message)) {
+          message = data.message.join(", ");
+        } else if (typeof data?.message === "string") {
+          message = data.message;
+        }
+
+        throw new Error(message);
+      }
+
+      const token = data?.data?.token;
+      const role = data?.data?.role;
+
+      if (token) {
+        localStorage.setItem("token", token);
+
+        document.cookie = [
+          `token=${encodeURIComponent(token)}`,
+          "path=/",
+          `max-age=${60 * 60 * 24}`,
+          "SameSite=Lax",
+        ].join("; ");
+      }
+
+      if (role) {
+        localStorage.setItem("role", role);
+
+        document.cookie = [
+          `role=${encodeURIComponent(role)}`,
+          "path=/",
+          `max-age=${60 * 60 * 24}`,
+          "SameSite=Lax",
+        ].join("; ");
+      }
 
       setSuccess(
-        "Pendaftaran berhasil. Silakan masuk menggunakan akun admin kamu."
+        data?.message ||
+          "Pendaftaran Unit Admin Bank Sampah berhasil!"
       );
 
       setForm({
@@ -150,14 +219,23 @@ export default function AdminRegisterPage() {
         agree: false,
       });
 
-      // Redirect setelah register berhasil
       setTimeout(() => {
         window.location.href = "/admin-login";
-      }, 1200);
-    } catch {
-      setError(
-        "Terjadi kesalahan saat melakukan pendaftaran. Silakan coba lagi."
-      );
+      }, 1500);
+    } catch (error) {
+      console.error("REGISTER ERROR:", error);
+
+      if (error instanceof TypeError) {
+        setError(
+          "Tidak dapat terhubung ke server. Periksa URL API atau koneksi backend."
+        );
+      } else {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat melakukan pendaftaran."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -167,8 +245,11 @@ export default function AdminRegisterPage() {
     <main className="min-h-screen bg-[#f5f1e8] px-4 py-8 sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
         <div className="grid w-full overflow-hidden rounded-[28px] border border-[#e4dfd3] bg-[#fffdf9] shadow-[0_20px_60px_rgba(38,70,45,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
-          
-          {/* LEFT SIDE */}
+
+          {/* =================================================
+              LEFT SIDE
+          ================================================= */}
+
           <section className="relative hidden overflow-hidden bg-[#e7f0e3] p-10 lg:flex lg:flex-col lg:justify-between">
             <div>
               <Link
@@ -181,13 +262,17 @@ export default function AdminRegisterPage() {
 
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2f7d3c] text-white shadow-sm">
-                  <Recycle size={25} strokeWidth={2} />
+                  <Recycle
+                    size={25}
+                    strokeWidth={2}
+                  />
                 </div>
 
                 <div>
                   <h1 className="font-serif text-xl font-semibold text-[#183b22]">
                     Bank Sampah
                   </h1>
+
                   <p className="text-xs text-[#718071]">
                     Panel Admin
                   </p>
@@ -205,9 +290,9 @@ export default function AdminRegisterPage() {
               </h2>
 
               <p className="mt-5 max-w-md text-sm leading-7 text-[#667466]">
-                Daftarkan unit bank sampah kamu dan mulai kelola nasabah,
-                kategori sampah, hadiah, penyetoran, serta laporan dalam
-                satu tempat.
+                Daftarkan unit bank sampah kamu dan mulai
+                kelola nasabah, kategori sampah, hadiah,
+                penyetoran, serta laporan dalam satu tempat.
               </p>
 
               <div className="mt-8 space-y-3">
@@ -222,8 +307,12 @@ export default function AdminRegisterPage() {
                     className="flex items-center gap-3 text-sm text-[#49604c]"
                   >
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#2f7d3c]">
-                      <Check size={14} strokeWidth={2.5} />
+                      <Check
+                        size={14}
+                        strokeWidth={2.5}
+                      />
                     </span>
+
                     {item}
                   </div>
                 ))}
@@ -231,12 +320,18 @@ export default function AdminRegisterPage() {
             </div>
 
             <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-[#d4e5d0]" />
+
             <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-[#dce9d8]" />
           </section>
 
-          {/* RIGHT SIDE */}
+          {/* =================================================
+              RIGHT SIDE
+          ================================================= */}
+
           <section className="px-6 py-8 sm:px-10 lg:px-12 lg:py-10">
+
             {/* Mobile Header */}
+
             <div className="mb-7 flex items-center justify-between lg:hidden">
               <Link
                 href="/"
@@ -258,6 +353,9 @@ export default function AdminRegisterPage() {
             </div>
 
             <div className="mx-auto max-w-lg">
+
+              {/* Header */}
+
               <div className="mb-8">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6c856e]">
                   Daftar Admin
@@ -268,12 +366,13 @@ export default function AdminRegisterPage() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-[#788078]">
-                  Lengkapi data berikut untuk membuat akun admin unit bank
-                  sampah.
+                  Lengkapi data berikut untuk membuat akun
+                  admin unit bank sampah.
                 </p>
               </div>
 
               {/* ERROR */}
+
               {error && (
                 <div className="mb-5 rounded-xl border border-[#efd4d0] bg-[#fff4f2] px-4 py-3 text-sm text-[#a34c42]">
                   {error}
@@ -281,14 +380,22 @@ export default function AdminRegisterPage() {
               )}
 
               {/* SUCCESS */}
+
               {success && (
                 <div className="mb-5 rounded-xl border border-[#cfe4cf] bg-[#f0f8ee] px-4 py-3 text-sm text-[#3f7045]">
                   {success}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              {/* FORM */}
+
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-5"
+              >
+
                 {/* Nama Unit */}
+
                 <div>
                   <label
                     htmlFor="unitName"
@@ -310,12 +417,14 @@ export default function AdminRegisterPage() {
                       value={form.unitName}
                       onChange={handleChange}
                       placeholder="Contoh: Bank Sampah Hijau"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
                   </div>
                 </div>
 
                 {/* Nama Pengelola */}
+
                 <div>
                   <label
                     htmlFor="managerName"
@@ -337,12 +446,14 @@ export default function AdminRegisterPage() {
                       value={form.managerName}
                       onChange={handleChange}
                       placeholder="Contoh: Budi Santoso"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
                   </div>
                 </div>
 
                 {/* Nomor Telepon */}
+
                 <div>
                   <label
                     htmlFor="phone"
@@ -361,15 +472,18 @@ export default function AdminRegisterPage() {
                       id="phone"
                       name="phone"
                       type="tel"
+                      inputMode="numeric"
                       value={form.phone}
                       onChange={handleChange}
                       placeholder="Contoh: 081234567890"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
                   </div>
                 </div>
 
                 {/* Username */}
+
                 <div>
                   <label
                     htmlFor="username"
@@ -392,12 +506,14 @@ export default function AdminRegisterPage() {
                       onChange={handleChange}
                       placeholder="Masukkan username"
                       autoComplete="username"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-4 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
                   </div>
                 </div>
 
                 {/* Password */}
+
                 <div>
                   <label
                     htmlFor="password"
@@ -415,18 +531,28 @@ export default function AdminRegisterPage() {
                     <input
                       id="password"
                       name="password"
-                      type={showPassword ? "text" : "password"}
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
                       value={form.password}
                       onChange={handleChange}
                       placeholder="Minimal 6 karakter"
                       autoComplete="new-password"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-12 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-12 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
 
                     <button
                       type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#89948a] transition hover:text-[#2f7d3c]"
+                      onClick={() =>
+                        setShowPassword(
+                          (prev) => !prev
+                        )
+                      }
+                      disabled={loading}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#89948a] transition hover:text-[#2f7d3c] disabled:cursor-not-allowed"
                       aria-label={
                         showPassword
                           ? "Sembunyikan password"
@@ -443,6 +569,7 @@ export default function AdminRegisterPage() {
                 </div>
 
                 {/* Confirm Password */}
+
                 <div>
                   <label
                     htmlFor="confirmPassword"
@@ -460,20 +587,28 @@ export default function AdminRegisterPage() {
                     <input
                       id="confirmPassword"
                       name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={
+                        showConfirmPassword
+                          ? "text"
+                          : "password"
+                      }
                       value={form.confirmPassword}
                       onChange={handleChange}
                       placeholder="Masukkan ulang password"
                       autoComplete="new-password"
-                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-12 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd]"
+                      disabled={loading}
+                      className="h-12 w-full rounded-xl border border-[#dddcd3] bg-[#fffefb] pl-11 pr-12 text-sm text-[#263a2a] outline-none transition placeholder:text-[#a5aaa4] focus:border-[#79a477] focus:ring-4 focus:ring-[#dfeedd] disabled:cursor-not-allowed disabled:bg-[#f5f5f1]"
                     />
 
                     <button
                       type="button"
                       onClick={() =>
-                        setShowConfirmPassword((prev) => !prev)
+                        setShowConfirmPassword(
+                          (prev) => !prev
+                        )
                       }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#89948a] transition hover:text-[#2f7d3c]"
+                      disabled={loading}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#89948a] transition hover:text-[#2f7d3c] disabled:cursor-not-allowed"
                       aria-label={
                         showConfirmPassword
                           ? "Sembunyikan konfirmasi password"
@@ -490,6 +625,7 @@ export default function AdminRegisterPage() {
                 </div>
 
                 {/* Agreement */}
+
                 <label className="flex cursor-pointer items-start gap-3 pt-1">
                   <span className="relative mt-0.5">
                     <input
@@ -497,6 +633,7 @@ export default function AdminRegisterPage() {
                       name="agree"
                       checked={form.agree}
                       onChange={handleChange}
+                      disabled={loading}
                       className="peer sr-only"
                     />
 
@@ -524,6 +661,7 @@ export default function AdminRegisterPage() {
                 </label>
 
                 {/* Submit */}
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -541,6 +679,7 @@ export default function AdminRegisterPage() {
               </form>
 
               {/* Login */}
+
               <p className="mt-7 text-center text-sm text-[#7a817b]">
                 Sudah punya akun?{" "}
                 <Link

@@ -3,6 +3,12 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || ""
+).replace(/\/+$/, "");
+
+const APP_KEY = process.env.NEXT_PUBLIC_APP_KEY || "";
+
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,130 +16,240 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // =====================================================
+  // LOGIN
+  // =====================================================
+
   const handleLogin = async (
     e: FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      setError("Username dan password wajib diisi.");
+    setError("");
+
+    const cleanUsername = username.trim();
+
+    // ===================================================
+    // VALIDASI
+    // ===================================================
+
+    if (!cleanUsername) {
+      setError("Username wajib diisi.");
       return;
     }
 
-    setLoading(true);
-    setError("");
+    if (!password) {
+      setError("Password wajib diisi.");
+      return;
+    }
+
+    if (!API_BASE) {
+      setError(
+        "NEXT_PUBLIC_API_URL belum tersedia."
+      );
+      return;
+    }
+
+    if (!APP_KEY) {
+      setError(
+        "NEXT_PUBLIC_APP_KEY belum tersedia."
+      );
+      return;
+    }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const appKey = process.env.NEXT_PUBLIC_APP_KEY;
+      setLoading(true);
 
-      if (!apiUrl || !appKey) {
-        throw new Error(
-          "Konfigurasi API belum tersedia."
-        );
-      }
+      // =================================================
+      // LOGIN API
+      // =================================================
 
-      const response = await fetch(
-        `${apiUrl}/api/v1/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-app-key": appKey,
-          },
-          body: JSON.stringify({
-            username: username.trim(),
-            password: password,
-          }),
-        }
-      );
+      const loginUrl = `${API_BASE}/api/v1/auth/login`;
+
+      console.log("========== ADMIN LOGIN ==========");
+      console.log("API URL:", loginUrl);
+      console.log("Username:", cleanUsername);
+      console.log("App Key tersedia:", !!APP_KEY);
+
+      const response = await fetch(loginUrl, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-app-key": APP_KEY,
+        },
+
+        body: JSON.stringify({
+          username: cleanUsername,
+          password: password,
+        }),
+      });
+
+      // =================================================
+      // RESPONSE
+      // =================================================
 
       const contentType =
-        response.headers.get("content-type");
+        response.headers.get("content-type") || "";
 
       let result: any;
 
-      if (
-        contentType &&
-        contentType.includes("application/json")
-      ) {
+      if (contentType.includes("application/json")) {
         result = await response.json();
       } else {
+        const text = await response.text();
+
+        console.error(
+          "Response bukan JSON:",
+          text
+        );
+
         throw new Error(
-          `Server mengembalikan response yang tidak valid. Status: ${response.status}`
+          `Server mengembalikan response tidak valid. Status: ${response.status}`
         );
       }
 
-      if (!response.ok || !result.success) {
+      console.log(
+        "LOGIN STATUS:",
+        response.status
+      );
+
+      console.log(
+        "LOGIN RESPONSE:",
+        result
+      );
+
+      // =================================================
+      // HANDLE ERROR BACKEND
+      // =================================================
+
+      if (!response.ok || result?.success === false) {
+        let message =
+          "Username atau password salah.";
+
+        if (Array.isArray(result?.message)) {
+          message = result.message.join(", ");
+        } else if (
+          typeof result?.message === "string"
+        ) {
+          message = result.message;
+        }
+
+        throw new Error(message);
+      }
+
+      // =================================================
+      // AMBIL DATA
+      // =================================================
+
+      const data = result?.data;
+
+      if (!data) {
         throw new Error(
-          result.message ||
-            "Username atau password salah."
+          "Data login tidak ditemukan dari server."
         );
       }
 
-      const data = result.data;
+      const token = data?.token;
 
-      if (!data?.token) {
+      if (!token) {
+        console.error(
+          "Response login tidak memiliki token:",
+          result
+        );
+
         throw new Error(
           "Token tidak ditemukan dari server."
         );
       }
 
-      // =========================
-      // SIMPAN TOKEN
-      // =========================
+      // =================================================
+      // CEK ROLE
+      // =================================================
+
+      const role = data?.role;
+
+      console.log("LOGIN ROLE:", role);
+
+      if (role && role !== "ADMIN") {
+        throw new Error(
+          "Akun yang digunakan bukan akun Admin."
+        );
+      }
+
+      // =================================================
+      // SIMPAN LOCAL STORAGE
+      // =================================================
 
       localStorage.setItem(
         "token",
-        data.token
+        token
       );
-
-      // =========================
-      // SIMPAN APP KEY
-      // =========================
 
       localStorage.setItem(
         "appKey",
-        appKey
+        APP_KEY
       );
 
-      // =========================
-      // SIMPAN DATA USER
-      // =========================
+      localStorage.setItem(
+        "role",
+        role || "ADMIN"
+      );
 
       localStorage.setItem(
         "user",
         JSON.stringify(data)
       );
 
-      // =========================
-      // SIMPAN TOKEN COOKIE
-      // =========================
+      // =================================================
+      // SIMPAN COOKIE
+      //
+      // Nama cookie ini disamakan dengan AuthGuard/
+      // middleware yang kamu gunakan sebelumnya.
+      // =================================================
 
-      // =========================
-// SIMPAN TOKEN COOKIE
-// =========================
+      document.cookie =
+        `bank_sampah_token=${encodeURIComponent(
+          token
+        )}; ` +
+        `path=/; ` +
+        `max-age=${60 * 60 * 24}; ` +
+        `SameSite=Lax`;
 
-document.cookie =
-  `bank_sampah_token=${encodeURIComponent(data.token)}; ` +
-  `path=/; ` +
-  `max-age=${60 * 60 * 24}; ` +
-  `SameSite=Lax;`;
+      document.cookie =
+        `bank_sampah_role=${encodeURIComponent(
+          role || "ADMIN"
+        )}; ` +
+        `path=/; ` +
+        `max-age=${60 * 60 * 24}; ` +
+        `SameSite=Lax`;
 
-document.cookie =
-  `bank_sampah_role=${encodeURIComponent(data.role || "ADMIN")}; ` +
-  `path=/; ` +
-  `max-age=${60 * 60 * 24}; ` +
-  `SameSite=Lax;`;
+      // =================================================
+      // DEBUG
+      // =================================================
 
-      // =========================
-      // MASUK DASHBOARD ADMIN
-      // =========================
+      console.log(
+        "Token berhasil disimpan."
+      );
+
+      console.log(
+        "Role berhasil disimpan:",
+        role || "ADMIN"
+      );
+
+      // =================================================
+      // REDIRECT
+      // =================================================
 
       window.location.replace(
         "/admin/dashboard"
       );
     } catch (error) {
+      console.error(
+        "ADMIN LOGIN ERROR:",
+        error
+      );
+
       setError(
         error instanceof Error
           ? error.message
@@ -144,20 +260,25 @@ document.cookie =
     }
   };
 
+  // =====================================================
+  // BACK TO HOME
+  // =====================================================
+
   const handleBackToHome = () => {
     window.location.replace("/");
   };
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F4F8F1] px-6 py-10">
       <div className="w-full max-w-md">
 
-        {/* =========================
-            LOGO
-        ========================= */}
+        {/* LOGO */}
 
         <div className="mb-8 text-center">
-
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2E7D32] text-3xl shadow-lg">
             ♻️
           </div>
@@ -169,19 +290,15 @@ document.cookie =
           <p className="mt-2 text-sm text-[#718074]">
             Panel Admin
           </p>
-
         </div>
 
-        {/* =========================
-            LOGIN CARD
-        ========================= */}
+        {/* LOGIN CARD */}
 
         <div className="rounded-3xl bg-white p-8 shadow-xl shadow-[#315E37]/10">
 
           {/* HEADER */}
 
           <div className="mb-7">
-
             <h2 className="text-2xl font-bold text-[#18351F]">
               Login Admin
             </h2>
@@ -189,12 +306,9 @@ document.cookie =
             <p className="mt-2 text-sm text-[#718074]">
               Masuk untuk mengelola Bank Sampah Digital.
             </p>
-
           </div>
 
-          {/* =========================
-              FORM
-          ========================= */}
+          {/* FORM */}
 
           <form
             onSubmit={handleLogin}
@@ -204,7 +318,6 @@ document.cookie =
             {/* USERNAME */}
 
             <div>
-
               <label
                 htmlFor="username"
                 className="mb-2 block text-sm font-semibold text-[#38513D]"
@@ -216,22 +329,21 @@ document.cookie =
                 id="username"
                 type="text"
                 value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setError("");
+                }}
                 placeholder="Masukkan username"
                 required
                 autoComplete="username"
                 disabled={loading}
                 className="w-full rounded-xl border border-[#D9E4D6] bg-[#FAFCF9] px-4 py-3.5 text-sm text-[#18351F] outline-none transition placeholder:text-[#A2ADA4] focus:border-[#4CAF50] focus:ring-4 focus:ring-[#4CAF50]/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
-
             </div>
 
             {/* PASSWORD */}
 
             <div>
-
               <label
                 htmlFor="password"
                 className="mb-2 block text-sm font-semibold text-[#38513D]"
@@ -243,16 +355,16 @@ document.cookie =
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
                 placeholder="Masukkan password"
                 required
                 autoComplete="current-password"
                 disabled={loading}
                 className="w-full rounded-xl border border-[#D9E4D6] bg-[#FAFCF9] px-4 py-3.5 text-sm text-[#18351F] outline-none transition placeholder:text-[#A2ADA4] focus:border-[#4CAF50] focus:ring-4 focus:ring-[#4CAF50]/10 disabled:cursor-not-allowed disabled:opacity-60"
               />
-
             </div>
 
             {/* ERROR */}
@@ -274,15 +386,11 @@ document.cookie =
                 ? "Memproses..."
                 : "Login Admin"}
             </button>
-
           </form>
 
-          {/* =========================
-              REGISTER ADMIN
-          ========================= */}
+          {/* REGISTER */}
 
           <div className="mt-6 border-t border-[#EDF1EB] pt-6 text-center">
-
             <p className="text-sm text-[#718074]">
               Belum punya akun?
             </p>
@@ -293,12 +401,9 @@ document.cookie =
             >
               Daftar Unit Bank Sampah
             </Link>
-
           </div>
 
-          {/* =========================
-              BACK TO HOME
-          ========================= */}
+          {/* BACK */}
 
           <button
             type="button"
@@ -308,17 +413,13 @@ document.cookie =
           >
             ← Kembali ke halaman utama
           </button>
-
         </div>
 
-        {/* =========================
-            FOOTER
-        ========================= */}
+        {/* FOOTER */}
 
         <p className="mt-6 text-center text-xs text-[#8A978C]">
           Bank Sampah Digital Hub © 2026
         </p>
-
       </div>
     </main>
   );

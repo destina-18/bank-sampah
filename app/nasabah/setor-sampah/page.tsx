@@ -87,17 +87,21 @@ export default function SetorSampahPage() {
   // DETAIL STATE
   // ==========================================
 
-  const [detailData, setDetailData] = useState<SetorDetail | null>(null);
+  const [detailData, setDetailData] =
+    useState<SetorDetail | null>(null);
 
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [loadingDetail, setLoadingDetail] =
+    useState(false);
 
   // ==========================================
   // GENERAL STATE
   // ==========================================
 
-  const [loadingKategori, setLoadingKategori] = useState(true);
+  const [loadingKategori, setLoadingKategori] =
+    useState(true);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] =
+    useState(false);
 
   const [error, setError] = useState("");
 
@@ -107,18 +111,23 @@ export default function SetorSampahPage() {
   // TODAY
   // ==========================================
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date()
+    .toISOString()
+    .split("T")[0];
 
   // ==========================================
   // API CONFIG
   // ==========================================
 
   const getAuth = () => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
-    const appKey = localStorage.getItem("appKey");
+    const appKey =
+      localStorage.getItem("appKey");
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL;
 
     return {
       token,
@@ -137,10 +146,16 @@ export default function SetorSampahPage() {
         setLoadingKategori(true);
         setError("");
 
-        const { token, appKey, apiUrl } = getAuth();
+        const {
+          token,
+          appKey,
+          apiUrl,
+        } = getAuth();
 
         if (!token || !appKey) {
-          router.replace("/nasabah-login");
+          router.replace(
+            "/nasabah-login"
+          );
           return;
         }
 
@@ -150,24 +165,34 @@ export default function SetorSampahPage() {
           );
         }
 
-        const response = await fetch(
-          `${apiUrl}/api/v1/kategori-sampah`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "x-app-key": appKey,
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
-          }
-        );
+        const response =
+          await fetch(
+            `${apiUrl}/api/v1/kategori-sampah`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type":
+                  "application/json",
+                "x-app-key": appKey,
+                Authorization:
+                  `Bearer ${token}`,
+              },
+              cache: "no-store",
+            }
+          );
 
         const contentType =
-          response.headers.get("content-type");
+          response.headers.get(
+            "content-type"
+          );
 
-        if (!contentType?.includes("application/json")) {
-          const text = await response.text();
+        if (
+          !contentType?.includes(
+            "application/json"
+          )
+        ) {
+          const text =
+            await response.text();
 
           console.error(
             "Response kategori bukan JSON:",
@@ -179,9 +204,13 @@ export default function SetorSampahPage() {
           );
         }
 
-        const result = await response.json();
+        const result =
+          await response.json();
 
-        if (!response.ok || !result.success) {
+        if (
+          !response.ok ||
+          !result.success
+        ) {
           throw new Error(
             result?.message ||
               "Gagal mengambil kategori sampah."
@@ -198,17 +227,31 @@ export default function SetorSampahPage() {
          * Kita dukung keduanya.
          */
 
-        const rawData = result.data;
+        const rawData =
+          result.data;
 
-        if (Array.isArray(rawData)) {
-          setKategori(rawData);
-        } else if (Array.isArray(rawData?.items)) {
-          setKategori(rawData.items);
+        if (
+          Array.isArray(rawData)
+        ) {
+          setKategori(
+            rawData
+          );
+        } else if (
+          Array.isArray(
+            rawData?.items
+          )
+        ) {
+          setKategori(
+            rawData.items
+          );
         } else {
           setKategori([]);
         }
       } catch (err) {
-        console.error("GET KATEGORI ERROR:", err);
+        console.error(
+          "GET KATEGORI ERROR:",
+          err
+        );
 
         setError(
           err instanceof Error
@@ -216,7 +259,9 @@ export default function SetorSampahPage() {
             : "Gagal mengambil kategori sampah."
         );
       } finally {
-        setLoadingKategori(false);
+        setLoadingKategori(
+          false
+        );
       }
     };
 
@@ -228,83 +273,109 @@ export default function SetorSampahPage() {
   // ==========================================
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      if (!detailId) {
-        setDetailData(null);
-        return;
-      }
-
-      try {
-        setLoadingDetail(true);
-        setError("");
-
-        const { token, appKey, apiUrl } = getAuth();
-
-        if (!token || !appKey) {
-          router.replace("/nasabah-login");
+    const fetchDetail =
+      async () => {
+        if (!detailId) {
+          setDetailData(null);
           return;
         }
 
-        if (!apiUrl) {
-          throw new Error(
-            "NEXT_PUBLIC_API_URL belum tersedia."
-          );
-        }
+        try {
+          setLoadingDetail(true);
+          setError("");
 
-        const response = await fetch(
-          `${apiUrl}/api/v1/setor-sampah/${detailId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "x-app-key": appKey,
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
+          const {
+            token,
+            appKey,
+            apiUrl,
+          } = getAuth();
+
+          if (!token || !appKey) {
+            router.replace(
+              "/nasabah-login"
+            );
+            return;
           }
-        );
 
-        const contentType =
-          response.headers.get("content-type");
+          if (!apiUrl) {
+            throw new Error(
+              "NEXT_PUBLIC_API_URL belum tersedia."
+            );
+          }
 
-        if (!contentType?.includes("application/json")) {
-          const text = await response.text();
+          const response =
+            await fetch(
+              `${apiUrl}/api/v1/setor-sampah/${detailId}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                  "x-app-key":
+                    appKey,
+                  Authorization:
+                    `Bearer ${token}`,
+                },
+                cache: "no-store",
+              }
+            );
 
+          const contentType =
+            response.headers.get(
+              "content-type"
+            );
+
+          if (
+            !contentType?.includes(
+              "application/json"
+            )
+          ) {
+            const text =
+              await response.text();
+
+            console.error(
+              "Response detail bukan JSON:",
+              text
+            );
+
+            throw new Error(
+              `Response API tidak valid (${response.status}).`
+            );
+          }
+
+          const result =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+            throw new Error(
+              result?.message ||
+                "Gagal mengambil detail penyetoran."
+            );
+          }
+
+          setDetailData(
+            result.data
+          );
+        } catch (err) {
           console.error(
-            "Response detail bukan JSON:",
-            text
+            "GET DETAIL SETOR ERROR:",
+            err
           );
 
-          throw new Error(
-            `Response API tidak valid (${response.status}).`
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Gagal mengambil detail penyetoran."
           );
-        }
-
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-          throw new Error(
-            result?.message ||
-              "Gagal mengambil detail penyetoran."
+        } finally {
+          setLoadingDetail(
+            false
           );
         }
-
-        setDetailData(result.data);
-      } catch (err) {
-        console.error(
-          "GET DETAIL SETOR ERROR:",
-          err
-        );
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Gagal mengambil detail penyetoran."
-        );
-      } finally {
-        setLoadingDetail(false);
-      }
-    };
+      };
 
     fetchDetail();
   }, [detailId, router]);
@@ -330,10 +401,13 @@ export default function SetorSampahPage() {
       return;
     }
 
-    const beratNumber = Number(berat);
+    const beratNumber =
+      Number(berat);
 
     if (
-      !Number.isFinite(beratNumber) ||
+      !Number.isFinite(
+        beratNumber
+      ) ||
       beratNumber <= 0
     ) {
       setError(
@@ -342,9 +416,12 @@ export default function SetorSampahPage() {
       return;
     }
 
-    const selected = kategori.find(
-      (item) => item.id === selectedKategori
-    );
+    const selected =
+      kategori.find(
+        (item) =>
+          item.id ===
+          selectedKategori
+      );
 
     if (!selected) {
       setError(
@@ -353,10 +430,12 @@ export default function SetorSampahPage() {
       return;
     }
 
-    const alreadyExists = items.some(
-      (item) =>
-        item.kategoriSampahId === selected.id
-    );
+    const alreadyExists =
+      items.some(
+        (item) =>
+          item.kategoriSampahId ===
+          selected.id
+      );
 
     if (alreadyExists) {
       setError(
@@ -368,12 +447,18 @@ export default function SetorSampahPage() {
     setItems((prev) => [
       ...prev,
       {
-        kategoriSampahId: selected.id,
-        namaKategori: selected.namaKategori,
-        jenis: selected.jenis,
-        beratKg: berat,
-        hargaPerKg: selected.hargaPerKg,
-        poinPerKg: selected.poinPerKg,
+        kategoriSampahId:
+          selected.id,
+        namaKategori:
+          selected.namaKategori,
+        jenis:
+          selected.jenis,
+        beratKg:
+          berat,
+        hargaPerKg:
+          selected.hargaPerKg,
+        poinPerKg:
+          selected.poinPerKg,
       },
     ]);
 
@@ -386,10 +471,13 @@ export default function SetorSampahPage() {
   // HAPUS ITEM
   // ==========================================
 
-  const handleRemoveItem = (index: number) => {
+  const handleRemoveItem = (
+    index: number
+  ) => {
     setItems((prev) =>
       prev.filter(
-        (_, itemIndex) => itemIndex !== index
+        (_, itemIndex) =>
+          itemIndex !== index
       )
     );
   };
@@ -398,36 +486,48 @@ export default function SetorSampahPage() {
   // TOTAL BERAT
   // ==========================================
 
-  const totalBerat = useMemo(() => {
-    return items.reduce(
-      (total, item) =>
-        total + Number(item.beratKg || 0),
-      0
-    );
-  }, [items]);
+  const totalBerat =
+    useMemo(() => {
+      return items.reduce(
+        (total, item) =>
+          total +
+          Number(
+            item.beratKg || 0
+          ),
+        0
+      );
+    }, [items]);
 
   // ==========================================
   // TOTAL POIN
   // ==========================================
 
-  const totalPoin = useMemo(() => {
-    return items.reduce(
-      (total, item) =>
-        total +
-        Number(item.beratKg || 0) *
-          item.poinPerKg,
-      0
-    );
-  }, [items]);
+  const totalPoin =
+    useMemo(() => {
+      return items.reduce(
+        (total, item) =>
+          total +
+          Number(
+            item.beratKg || 0
+          ) *
+            item.poinPerKg,
+        0
+      );
+    }, [items]);
 
   // ==========================================
   // FORMAT POIN
   // ==========================================
 
-  const formatPoin = (value: number) => {
-    return value.toLocaleString("id-ID", {
-      maximumFractionDigits: 2,
-    });
+  const formatPoin = (
+    value: number
+  ) => {
+    return value.toLocaleString(
+      "id-ID",
+      {
+        maximumFractionDigits: 2,
+      }
+    );
   };
 
   // ==========================================
@@ -442,12 +542,20 @@ export default function SetorSampahPage() {
     setError("");
     setSuccess("");
 
+    // ========================================
+    // TANGGAL WAJIB
+    // ========================================
+
     if (!tanggal) {
       setError(
         "Silakan pilih tanggal penyetoran."
       );
       return;
     }
+
+    // ========================================
+    // ITEM WAJIB
+    // ========================================
 
     if (items.length === 0) {
       setError(
@@ -466,7 +574,9 @@ export default function SetorSampahPage() {
       } = getAuth();
 
       if (!token || !appKey) {
-        router.replace("/nasabah-login");
+        router.replace(
+          "/nasabah-login"
+        );
         return;
       }
 
@@ -481,18 +591,25 @@ export default function SetorSampahPage() {
       // ======================================
 
       const body = {
-        tanggal: new Date(
-          `${tanggal}T10:00:00`
-        ).toISOString(),
+        tanggal:
+          new Date(
+            `${tanggal}T10:00:00`
+          ).toISOString(),
 
-        catatan: catatan.trim(),
+        catatan:
+          catatan.trim(),
 
-        items: items.map((item) => ({
-          kategoriSampahId:
-            item.kategoriSampahId,
+        items: items.map(
+          (item) => ({
+            kategoriSampahId:
+              item.kategoriSampahId,
 
-          beratKg: Number(item.beratKg),
-        })),
+            beratKg:
+              Number(
+                item.beratKg
+              ),
+          })
+        ),
       };
 
       console.log(
@@ -500,28 +617,40 @@ export default function SetorSampahPage() {
         body
       );
 
-      const response = await fetch(
-        `${apiUrl}/api/v1/setor-sampah/pengajuan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-app-key": appKey,
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        }
-      );
+      // ======================================
+      // POST API
+      // ======================================
+
+      const response =
+        await fetch(
+          `${apiUrl}/api/v1/setor-sampah/pengajuan`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+              "x-app-key":
+                appKey,
+              Authorization:
+                `Bearer ${token}`,
+            },
+            body:
+              JSON.stringify(body),
+          }
+        );
 
       const contentType =
-        response.headers.get("content-type");
+        response.headers.get(
+          "content-type"
+        );
 
       if (
         !contentType?.includes(
           "application/json"
         )
       ) {
-        const text = await response.text();
+        const text =
+          await response.text();
 
         console.error(
           "Response POST bukan JSON:",
@@ -533,7 +662,8 @@ export default function SetorSampahPage() {
         );
       }
 
-      const result = await response.json();
+      const result =
+        await response.json();
 
       console.log(
         "POST PENGAJUAN RESULT:",
@@ -548,18 +678,28 @@ export default function SetorSampahPage() {
           result?.message ||
           "Gagal mengajukan penyetoran.";
 
-        if (Array.isArray(message)) {
-          message = message.join(", ");
+        if (
+          Array.isArray(
+            message
+          )
+        ) {
+          message =
+            message.join(
+              ", "
+            );
         }
 
-        throw new Error(message);
+        throw new Error(
+          message
+        );
       }
 
       // ======================================
       // BERHASIL
       // ======================================
 
-      const newId = result?.data?.id;
+      const newId =
+        result?.data?.id;
 
       if (!newId) {
         throw new Error(
@@ -584,18 +724,14 @@ export default function SetorSampahPage() {
       setShowPicker(false);
 
       /*
-       * PENTING:
-       *
-       * Tidak ada router.push() di sini.
-       *
        * Setelah pengajuan berhasil:
+       *
        * - Data sudah tersimpan di API
        * - User tetap berada di halaman Setor Sampah
-       * - Pesan berhasil akan ditampilkan
-       * - Form akan dikosongkan
-       *
-       * Detail transaksi dapat dibuka
-       * dari halaman Riwayat nantinya.
+       * - Pesan berhasil ditampilkan
+       * - Form dikosongkan
+       * - Detail transaksi dapat dibuka
+       *   dari halaman Riwayat
        */
     } catch (err) {
       console.error(
@@ -617,17 +753,18 @@ export default function SetorSampahPage() {
   // KEMBALI KE FORM
   // ==========================================
 
-  const handleBackToForm = () => {
-    setDetailData(null);
-    setError("");
+  const handleBackToForm =
+    () => {
+      setDetailData(null);
+      setError("");
 
-    router.push(
-      "/nasabah/setor-sampah"
-    );
-  };
+      router.push(
+        "/nasabah/setor-sampah"
+      );
+    };
 
   // ==========================================
-  // JIKA MODE DETAIL
+  // MODE DETAIL
   // ==========================================
 
   if (detailId) {
@@ -640,7 +777,8 @@ export default function SetorSampahPage() {
                 <Loader2 className="mx-auto mb-3 h-7 w-7 animate-spin text-[#2f8135]" />
 
                 <p className="text-[11px] text-[#829087]">
-                  Memuat detail penyetoran...
+                  Memuat detail
+                  penyetoran...
                 </p>
               </div>
             </div>
@@ -723,7 +861,9 @@ export default function SetorSampahPage() {
               </h1>
 
               <p className="mt-0.5 text-[11px] text-[#829087]">
-                Masukkan jenis sampah dan estimasi beratnya.
+                Masukkan jenis sampah,
+                tanggal, dan estimasi
+                beratnya.
               </p>
             </div>
           </div>
@@ -763,27 +903,51 @@ export default function SetorSampahPage() {
         >
 
           {/* ======================================
-              TANGGAL
+              TANGGAL PENYETORAN - WAJIB
           ====================================== */}
 
           <section className="rounded-[20px] border border-[#e5e0d5] bg-white p-5">
-            <label className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[#31443a]">
+            <label
+              htmlFor="tanggal"
+              className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[#31443a]"
+            >
               <CalendarDays className="h-4 w-4 text-[#2f8135]" />
 
               Tanggal Penyetoran
+
+              <span className="text-[#b76565]">
+                *
+              </span>
             </label>
 
             <input
+              id="tanggal"
+              name="tanggal"
               type="date"
               value={tanggal}
               min={today}
-              onChange={(e) =>
+              required
+              disabled={submitting}
+              onChange={(e) => {
                 setTanggal(
                   e.target.value
-                )
-              }
-              className="h-11 w-full rounded-xl border border-[#ded9d0] bg-white px-3 text-[12px] text-[#31443a] outline-none transition focus:border-[#b9cdb4] focus:ring-2 focus:ring-[#e5f0e2]"
+                );
+
+                setError("");
+              }}
+              className={`h-11 w-full rounded-xl border bg-white px-3 text-[12px] text-[#31443a] outline-none transition focus:border-[#b9cdb4] focus:ring-2 focus:ring-[#e5f0e2] ${
+                !tanggal
+                  ? "border-[#ded9d0]"
+                  : "border-[#b9cdb4]"
+              }`}
             />
+
+            {!tanggal && (
+              <p className="mt-2 text-[10px] text-[#b76565]">
+                Tanggal penyetoran
+                wajib diisi.
+              </p>
+            )}
           </section>
 
           {/* ======================================
@@ -798,7 +962,8 @@ export default function SetorSampahPage() {
                 </h2>
 
                 <p className="mt-0.5 text-[10px] text-[#929b95]">
-                  Tambahkan jenis sampah yang ingin disetor.
+                  Tambahkan jenis sampah
+                  yang ingin disetor.
                 </p>
               </div>
 
@@ -820,9 +985,7 @@ export default function SetorSampahPage() {
               </button>
             </div>
 
-            {/* ====================================
-                PICKER
-            ==================================== */}
+            {/* PICKER */}
 
             {showPicker && (
               <div className="mb-5 rounded-[16px] border border-[#e5e0d5] bg-[#faf9f6] p-4">
@@ -831,19 +994,22 @@ export default function SetorSampahPage() {
                     <Loader2 className="h-4 w-4 animate-spin text-[#2f8135]" />
 
                     <span className="text-[11px] text-[#829087]">
-                      Memuat jenis sampah...
+                      Memuat jenis
+                      sampah...
                     </span>
                   </div>
                 ) : kategori.length ===
                   0 ? (
                   <div className="py-5 text-center">
                     <p className="text-[11px] text-[#829087]">
-                      Belum ada kategori sampah.
+                      Belum ada
+                      kategori sampah.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
 
+                    {/* JENIS */}
                     <div>
                       <label className="mb-1.5 block text-[10px] font-medium text-[#66716a]">
                         Jenis Sampah
@@ -862,7 +1028,8 @@ export default function SetorSampahPage() {
                           className="h-11 w-full appearance-none rounded-xl border border-[#ded9d0] bg-white px-3 pr-9 text-[11px] text-[#31443a] outline-none focus:border-[#b9cdb4] focus:ring-2 focus:ring-[#e5f0e2]"
                         >
                           <option value="">
-                            Pilih jenis sampah
+                            Pilih jenis
+                            sampah
                           </option>
 
                           {kategori.map(
@@ -892,6 +1059,7 @@ export default function SetorSampahPage() {
                       </div>
                     </div>
 
+                    {/* BERAT */}
                     <div>
                       <label className="mb-1.5 block text-[10px] font-medium text-[#66716a]">
                         Estimasi Berat
@@ -918,6 +1086,7 @@ export default function SetorSampahPage() {
                       </div>
                     </div>
 
+                    {/* TAMBAHKAN */}
                     <button
                       type="button"
                       onClick={
@@ -934,9 +1103,7 @@ export default function SetorSampahPage() {
               </div>
             )}
 
-            {/* ====================================
-                ITEM LIST
-            ==================================== */}
+            {/* ITEM LIST */}
 
             {items.length === 0 ? (
               <div className="rounded-[16px] border border-dashed border-[#dcd8cf] bg-[#fcfbf8] px-5 py-8 text-center">
@@ -948,17 +1115,23 @@ export default function SetorSampahPage() {
                 </div>
 
                 <p className="text-[12px] font-medium text-[#66716a]">
-                  Belum ada sampah dipilih
+                  Belum ada sampah
+                  dipilih
                 </p>
 
                 <p className="mt-1 text-[10px] text-[#a3aaa3]">
-                  Klik "Tambah Sampah" untuk menambahkan.
+                  Klik "Tambah
+                  Sampah" untuk
+                  menambahkan.
                 </p>
               </div>
             ) : (
               <div className="space-y-2.5">
                 {items.map(
-                  (item, index) => (
+                  (
+                    item,
+                    index
+                  ) => (
                     <div
                       key={`${item.kategoriSampahId}-${index}`}
                       className="flex items-center gap-3 rounded-[15px] border border-[#e8e4da] bg-[#fcfbf8] p-3"
@@ -966,17 +1139,22 @@ export default function SetorSampahPage() {
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e5f0e2]">
                         <Recycle
                           className="h-[18px] w-[18px] text-[#2f8135]"
-                          strokeWidth={1.8}
+                          strokeWidth={
+                            1.8
+                          }
                         />
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[11px] font-semibold text-[#31443a]">
-                          {item.namaKategori}
+                          {
+                            item.namaKategori
+                          }
                         </p>
 
                         <p className="mt-0.5 text-[9px] capitalize text-[#929b95]">
-                          {item.jenis} • Rp{" "}
+                          {item.jenis} •
+                          Rp{" "}
                           {item.hargaPerKg.toLocaleString(
                             "id-ID"
                           )}
@@ -986,7 +1164,10 @@ export default function SetorSampahPage() {
 
                       <div className="text-right">
                         <p className="text-[11px] font-semibold text-[#31443a]">
-                          {item.beratKg} kg
+                          {
+                            item.beratKg
+                          }{" "}
+                          kg
                         </p>
 
                         <p className="mt-0.5 text-[9px] text-[#2f8135]">
@@ -1028,7 +1209,8 @@ export default function SetorSampahPage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] text-[#66805e]">
-                    Total Estimasi Berat
+                    Total Estimasi
+                    Berat
                   </p>
 
                   <p className="mt-1 text-[15px] font-semibold text-[#173c2b]">
@@ -1041,7 +1223,8 @@ export default function SetorSampahPage() {
 
                 <div className="text-right">
                   <p className="text-[10px] text-[#66805e]">
-                    Estimasi Total Poin
+                    Estimasi Total
+                    Poin
                   </p>
 
                   <p className="mt-1 text-[20px] font-bold text-[#2f8135]">
@@ -1088,7 +1271,8 @@ export default function SetorSampahPage() {
             type="submit"
             disabled={
               submitting ||
-              items.length === 0
+              items.length === 0 ||
+              !tanggal
             }
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2f8135] text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#276d2c] disabled:cursor-not-allowed disabled:opacity-50"
           >
