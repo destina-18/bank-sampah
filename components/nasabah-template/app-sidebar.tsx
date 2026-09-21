@@ -63,24 +63,47 @@ export function AppSidebar() {
   // ==========================================
 
   const logout = () => {
+    // ==========================================
+    // 1. HAPUS DATA AUTH DARI LOCAL STORAGE
+    // ==========================================
+
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("accesstoken");
     localStorage.removeItem("appKey");
+    localStorage.removeItem("app_key");
     localStorage.removeItem("user");
     localStorage.removeItem("role");
 
-    document.cookie =
-      "token=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+    // ==========================================
+    // 2. HAPUS COOKIE AUTH NASABAH
+    // ==========================================
 
     document.cookie =
-      "accessToken=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      "bank_sampah_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
     document.cookie =
-      "accesstoken=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      "bank_sampah_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    // ==========================================
+    // 3. HAPUS COOKIE AUTH LAMA / ALTERNATIF
+    // ==========================================
 
     document.cookie =
-      "role=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+      "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    document.cookie =
+      "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    document.cookie =
+      "accesstoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    document.cookie =
+      "role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    // ==========================================
+    // 4. KEMBALI KE LANDING PAGE
+    // ==========================================
 
     window.location.replace("/");
   };

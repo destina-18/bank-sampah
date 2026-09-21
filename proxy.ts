@@ -104,7 +104,16 @@ export async function proxy(
   const { pathname } = request.nextUrl;
 
   /*
-   * Jangan proses file static.
+   * =====================================================
+   * STATIC FILE
+   * =====================================================
+   *
+   * Jangan proses file static seperti:
+   * - _next
+   * - favicon
+   * - gambar
+   * - css
+   * - js
    */
   if (
     pathname.startsWith("/_next") ||
@@ -115,59 +124,33 @@ export async function proxy(
   }
 
   /*
-   * Public route.
+   * =====================================================
+   * PUBLIC ROUTE
+   * =====================================================
+   *
+   * Halaman berikut selalu boleh dibuka:
+   *
+   * /
+   * /admin-login
+   * /admin-register
+   * /nasabah-login
+   * /nasabah-register
+   *
+   * PENTING:
+   * Jangan redirect /nasabah-login ke dashboard
+   * hanya karena cookie login masih ada.
+   *
+   * Jadi ketika user klik:
+   *
+   * Landing
+   *   ↓
+   * Login Nasabah
+   *   ↓
+   * /nasabah-login
+   *
+   * halaman login tetap ditampilkan.
    */
   if (isPublicRoute(pathname)) {
-    /*
-     * Kalau sudah login dan membuka halaman login,
-     * arahkan ke dashboard sesuai role.
-     */
-    if (
-      pathname === "/admin-login" ||
-      pathname === "/nasabah-login"
-    ) {
-      const token =
-        request.cookies.get(
-          "bank_sampah_token"
-        )?.value;
-
-      const role =
-        request.cookies.get(
-          "bank_sampah_role"
-        )?.value;
-
-      if (token && role) {
-        const session =
-          await validateSession(token);
-
-        if (session.valid) {
-          if (
-            pathname === "/admin-login" &&
-            session.role === "ADMIN"
-          ) {
-            return NextResponse.redirect(
-              new URL(
-                "/admin/dashboard",
-                request.url
-              )
-            );
-          }
-
-          if (
-            pathname === "/nasabah-login" &&
-            session.role === "NASABAH"
-          ) {
-            return NextResponse.redirect(
-              new URL(
-                "/nasabah/dashboard",
-                request.url
-              )
-            );
-          }
-        }
-      }
-    }
-
     return NextResponse.next();
   }
 
@@ -182,6 +165,10 @@ export async function proxy(
         "bank_sampah_token"
       )?.value;
 
+    /*
+     * Tidak ada token
+     * → kembali ke login admin
+     */
     if (!token) {
       return redirectToLogin(
         request,
@@ -189,11 +176,14 @@ export async function proxy(
       );
     }
 
+    /*
+     * Validasi token ke API
+     */
     const session =
       await validateSession(token);
 
     /*
-     * Token invalid / expired.
+     * Token invalid / expired
      */
     if (!session.valid) {
       const response =
@@ -202,6 +192,9 @@ export async function proxy(
           "/admin-login"
         );
 
+      /*
+       * Hapus session cookie
+       */
       response.cookies.delete(
         "bank_sampah_token"
       );
@@ -214,7 +207,7 @@ export async function proxy(
     }
 
     /*
-     * Nasabah mencoba masuk Admin.
+     * Nasabah mencoba membuka halaman Admin
      */
     if (session.role !== "ADMIN") {
       return NextResponse.redirect(
@@ -225,13 +218,12 @@ export async function proxy(
       );
     }
 
+    /*
+     * Jangan cache halaman protected
+     */
     const response =
       NextResponse.next();
 
-    /*
-     * Jangan simpan response halaman protected
-     * di HTTP cache.
-     */
     response.headers.set(
       "Cache-Control",
       "private, no-store, no-cache, max-age=0, must-revalidate"
@@ -261,6 +253,10 @@ export async function proxy(
         "bank_sampah_token"
       )?.value;
 
+    /*
+     * Tidak ada token
+     * → kembali ke login nasabah
+     */
     if (!token) {
       return redirectToLogin(
         request,
@@ -268,11 +264,14 @@ export async function proxy(
       );
     }
 
+    /*
+     * Validasi token ke API
+     */
     const session =
       await validateSession(token);
 
     /*
-     * Token invalid / expired.
+     * Token invalid / expired
      */
     if (!session.valid) {
       const response =
@@ -281,6 +280,9 @@ export async function proxy(
           "/nasabah-login"
         );
 
+      /*
+       * Hapus session cookie
+       */
       response.cookies.delete(
         "bank_sampah_token"
       );
@@ -293,7 +295,7 @@ export async function proxy(
     }
 
     /*
-     * Admin mencoba masuk Nasabah.
+     * Admin mencoba membuka halaman Nasabah
      */
     if (session.role !== "NASABAH") {
       return NextResponse.redirect(
@@ -304,6 +306,9 @@ export async function proxy(
       );
     }
 
+    /*
+     * Jangan cache halaman protected
+     */
     const response =
       NextResponse.next();
 
@@ -325,9 +330,26 @@ export async function proxy(
     return response;
   }
 
+  /*
+   * =====================================================
+   * DEFAULT
+   * =====================================================
+   */
   return NextResponse.next();
 }
 
+/*
+ * =====================================================
+ * MATCHER
+ * =====================================================
+ *
+ * Proxy hanya dijalankan untuk:
+ *
+ * /admin/*
+ * /nasabah/*
+ * /admin-login
+ * /nasabah-login
+ */
 export const config = {
   matcher: [
     "/admin/:path*",
