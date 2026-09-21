@@ -34,10 +34,6 @@ export default function NasabahRegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // =====================================================
-  // ENV
-  // =====================================================
-
   const API_BASE_URL = (
     process.env.NEXT_PUBLIC_API_URL || ""
   ).replace(/\/+$/, "");
@@ -45,9 +41,6 @@ export default function NasabahRegisterPage() {
   const APP_KEY =
     process.env.NEXT_PUBLIC_APP_KEY || "";
 
-  // =====================================================
-  // HANDLE INPUT
-  // =====================================================
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -64,10 +57,6 @@ export default function NasabahRegisterPage() {
     }
   };
 
-  // =====================================================
-  // HANDLE FOTO
-  // =====================================================
-
   const handleFotoChange = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
@@ -78,7 +67,6 @@ export default function NasabahRegisterPage() {
       return;
     }
 
-    // Validasi tipe file
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -95,7 +83,6 @@ export default function NasabahRegisterPage() {
       return;
     }
 
-    // Validasi ukuran maksimal 5 MB
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
@@ -112,10 +99,6 @@ export default function NasabahRegisterPage() {
     setFoto(file);
   };
 
-  // =====================================================
-  // REGISTER
-  // =====================================================
-
   const handleRegister = async (
     e: FormEvent<HTMLFormElement>
   ) => {
@@ -123,10 +106,6 @@ export default function NasabahRegisterPage() {
 
     setError("");
     setSuccess("");
-
-    // ===================================================
-    // CEK ENV
-    // ===================================================
 
     if (!API_BASE_URL) {
       setError(
@@ -141,10 +120,6 @@ export default function NasabahRegisterPage() {
       );
       return;
     }
-
-    // ===================================================
-    // VALIDASI
-    // ===================================================
 
     if (!form.namaNasabah.trim()) {
       setError("Nama nasabah wajib diisi.");
@@ -202,10 +177,6 @@ export default function NasabahRegisterPage() {
       return;
     }
 
-    // ===================================================
-    // REQUEST
-    // ===================================================
-
     try {
       setLoading(true);
 
@@ -234,10 +205,6 @@ export default function NasabahRegisterPage() {
         "================================="
       );
 
-      // =================================================
-      // FORM DATA
-      // =================================================
-
       const formData = new FormData();
 
       formData.append(
@@ -265,17 +232,12 @@ export default function NasabahRegisterPage() {
         form.telp.trim()
       );
 
-      // Foto OPTIONAL sesuai Swagger
       if (foto) {
         formData.append(
           "foto",
           foto
         );
       }
-
-      // =================================================
-      // FETCH
-      // =================================================
 
       const response = await fetch(
         endpoint,
@@ -285,17 +247,9 @@ export default function NasabahRegisterPage() {
           headers: {
             "x-app-key": APP_KEY,
           },
-
-          // JANGAN tambahkan Content-Type di sini.
-          // Browser akan otomatis membuat:
-          // multipart/form-data; boundary=...
           body: formData,
         }
       );
-
-      // =================================================
-      // RESPONSE
-      // =================================================
 
       const contentType =
         response.headers.get(
@@ -333,10 +287,6 @@ export default function NasabahRegisterPage() {
         }
       );
 
-      // =================================================
-      // ERROR API
-      // =================================================
-
       if (!response.ok) {
         let message =
           data?.message ||
@@ -367,16 +317,10 @@ export default function NasabahRegisterPage() {
         );
       }
 
-      // =================================================
-      // BERHASIL
-      // =================================================
-
       setSuccess(
         data?.message ||
           "Registrasi nasabah berhasil. Mengarahkan ke halaman login..."
       );
-
-      // Reset form
       setForm({
         namaNasabah: "",
         alamat: "",
@@ -389,7 +333,6 @@ export default function NasabahRegisterPage() {
       setFoto(null);
       setSetuju(false);
 
-      // Reset input foto
       const fotoInput =
         document.getElementById(
           "foto"
@@ -399,7 +342,6 @@ export default function NasabahRegisterPage() {
         fotoInput.value = "";
       }
 
-      // Redirect
       setTimeout(() => {
         router.push(
           "/nasabah-login"
@@ -419,10 +361,6 @@ export default function NasabahRegisterPage() {
       setLoading(false);
     }
   };
-
-  // =====================================================
-  // UI
-  // =====================================================
 
   return (
     <main className="min-h-screen bg-[#F3EADF] flex items-center justify-center px-5 py-8">
@@ -500,7 +438,7 @@ export default function NasabahRegisterPage() {
             {/* NAMA NASABAH */}
             <div>
               <label
-                htmlFor="namaNasabah"
+                htmlFor="UserName"
                 className="sr-only"
               >
                 User Name
@@ -516,7 +454,7 @@ export default function NasabahRegisterPage() {
                 onChange={
                   handleChange
                 }
-                placeholder="Nama Lengkap"
+                placeholder="Username"
                 autoComplete="name"
                 disabled={loading}
                 className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
@@ -578,15 +516,15 @@ export default function NasabahRegisterPage() {
             {/* USERNAME */}
             <div>
               <label
-                htmlFor="username"
+                htmlFor="namalengkap"
                 className="sr-only"
               >
                 Nama
               </label>
 
               <input
-                id="username"
-                name="username"
+                id="namalengkap"
+                name="namalengkap"
                 type="text"
                 value={
                   form.username
@@ -594,8 +532,8 @@ export default function NasabahRegisterPage() {
                 onChange={
                   handleChange
                 }
-                placeholder="Username"
-                autoComplete="username"
+                placeholder="Nama Lengkap"
+                autoComplete="namalengkap"
                 disabled={loading}
                 className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
