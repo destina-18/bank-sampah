@@ -3,19 +3,64 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 
+// =====================================================
+// HELPER
+// =====================================================
+
+function clearAuth() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("appKey");
+  localStorage.removeItem("role");
+  localStorage.removeItem("user");
+
+  document.cookie =
+    "bank_sampah_token=; path=/; max-age=0";
+
+  document.cookie =
+    "bank_sampah_role=; path=/; max-age=0";
+}
+
+function getUserRole(data: any): string {
+  const possibleRoles = [
+    data?.role,
+    data?.user?.role,
+    data?.data?.role,
+    data?.data?.user?.role,
+  ];
+
+  const role = possibleRoles.find(
+    (value) =>
+      typeof value === "string" &&
+      value.trim() !== ""
+  );
+
+  return role
+    ? String(role).trim().toUpperCase()
+    : "";
+}
+
 export default function NasabahLoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] =
+    useState("");
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] =
+    useState("");
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] =
+    useState(false);
 
-  // =========================
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  // =====================================================
   // HANDLE LOGIN
-  // =========================
+  // =====================================================
 
   const handleLogin = async (
     e: FormEvent<HTMLFormElement>
@@ -25,29 +70,36 @@ export default function NasabahLoginPage() {
     setError("");
     setSuccess("");
 
-    // =========================
+    // ===================================================
     // VALIDASI
-    // =========================
+    // ===================================================
 
     if (!username.trim()) {
-      setError("Username wajib diisi.");
+      setError(
+        "Username wajib diisi."
+      );
       return;
     }
 
     if (!password.trim()) {
-      setError("Password wajib diisi.");
+      setError(
+        "Password wajib diisi."
+      );
       return;
     }
 
     setLoading(true);
 
     try {
-      // =========================
+      // =================================================
       // KONFIGURASI API
-      // =========================
+      // =================================================
 
       const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL;
+        (
+          process.env.NEXT_PUBLIC_API_URL ||
+          ""
+        ).replace(/\/+$/, "");
 
       const appKey =
         process.env.NEXT_PUBLIC_APP_KEY;
@@ -58,41 +110,74 @@ export default function NasabahLoginPage() {
         );
       }
 
-      // =========================
+      // =================================================
       // REQUEST LOGIN
-      // =========================
+      // =================================================
+
+      const loginUrl =
+        `${apiUrl}/api/v1/auth/login`;
+
+      console.log(
+        "========== NASABAH LOGIN =========="
+      );
+
+      console.log(
+        "API URL:",
+        loginUrl
+      );
+
+      console.log(
+        "Username:",
+        username.trim()
+      );
+
+      console.log(
+        "App Key tersedia:",
+        !!appKey
+      );
 
       const response = await fetch(
-        `${apiUrl}/api/v1/auth/login`,
+        loginUrl,
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
+
             "x-app-key": appKey,
           },
+
           body: JSON.stringify({
-            username: username.trim(),
+            username:
+              username.trim(),
+
             password,
           }),
         }
       );
 
-      // =========================
+      // =================================================
       // CEK RESPONSE
-      // =========================
+      // =================================================
 
       const contentType =
-        response.headers.get("content-type");
+        response.headers.get(
+          "content-type"
+        ) || "";
 
       let result: any;
 
       if (
-        contentType &&
-        contentType.includes("application/json")
+        contentType.includes(
+          "application/json"
+        )
       ) {
-        result = await response.json();
+        result =
+          await response.json();
       } else {
-        const text = await response.text();
+        const text =
+          await response.text();
 
         console.error(
           "Response bukan JSON:",
@@ -104,102 +189,272 @@ export default function NasabahLoginPage() {
         );
       }
 
-      // =========================
-      // VALIDASI RESPONSE API
-      // =========================
+      console.log(
+        "LOGIN STATUS:",
+        response.status
+      );
 
-      if (!response.ok || !result.success) {
+      console.log(
+        "LOGIN RESPONSE:",
+        result
+      );
+
+      // =================================================
+      // VALIDASI RESPONSE API
+      // =================================================
+
+      if (
+        !response.ok ||
+        result?.success === false
+      ) {
         let message =
-          result?.message ||
           "Username atau password salah.";
 
-        if (Array.isArray(message)) {
-          message = message.join(", ");
+        if (
+          Array.isArray(
+            result?.message
+          )
+        ) {
+          message =
+            result.message.join(
+              ", "
+            );
+        } else if (
+          typeof result?.message ===
+          "string"
+        ) {
+          message =
+            result.message;
         }
 
         throw new Error(message);
       }
 
-      // =========================
+      // =================================================
       // AMBIL DATA
-      // =========================
+      // =================================================
 
-      const data = result.data;
+      const data =
+        result?.data;
 
-      if (!data?.token) {
+      if (!data) {
+        throw new Error(
+          "Data login tidak ditemukan dari server."
+        );
+      }
+
+      const token =
+        data?.token;
+
+      if (!token) {
         throw new Error(
           "Token tidak ditemukan dari server."
         );
       }
 
-      // =========================
+      // =================================================
+      // CEK ROLE SEBENARNYA
+      // MELALUI /AUTH/ME
+      // =================================================
+
+      console.log(
+        "Memeriksa role melalui /auth/me..."
+      );
+
+      const meUrl =
+        `${apiUrl}/api/v1/auth/me`;
+
+      const meResponse =
+        await fetch(
+          meUrl,
+          {
+            method: "GET",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "Authorization":
+                `Bearer ${token}`,
+
+              "x-app-key":
+                appKey,
+            },
+
+            cache: "no-store",
+          }
+        );
+
+      // =================================================
+      // RESPONSE /AUTH/ME
+      // =================================================
+
+      const meContentType =
+        meResponse.headers.get(
+          "content-type"
+        ) || "";
+
+      let meResult: any;
+
+      if (
+        meContentType.includes(
+          "application/json"
+        )
+      ) {
+        meResult =
+          await meResponse.json();
+      } else {
+        const text =
+          await meResponse.text();
+
+        console.error(
+          "Response /auth/me bukan JSON:",
+          text
+        );
+
+        throw new Error(
+          `Gagal mengambil data user. Status: ${meResponse.status}`
+        );
+      }
+
+      console.log(
+        "AUTH ME STATUS:",
+        meResponse.status
+      );
+
+      console.log(
+        "AUTH ME RESPONSE:",
+        meResult
+      );
+
+      // =================================================
+      // VALIDASI AUTH/ME
+      // =================================================
+
+      if (
+        !meResponse.ok ||
+        meResult?.success === false
+      ) {
+        throw new Error(
+          meResult?.message ||
+            "Gagal memverifikasi akun."
+        );
+      }
+
+      // =================================================
+      // AMBIL ROLE
+      // =================================================
+
+      const meData =
+        meResult?.data;
+
+      const role =
+        getUserRole(meResult);
+
+      console.log(
+        "ROLE USER SEBENARNYA:",
+        role
+      );
+
+      // =================================================
+      // KHUSUS LOGIN NASABAH
+      // ROLE HARUS NASABAH
+      // =================================================
+
+      if (role !== "NASABAH") {
+        clearAuth();
+
+        if (role === "ADMIN") {
+          throw new Error(
+            "Akun ini adalah akun Admin. Silakan gunakan Login Admin."
+          );
+        }
+
+        throw new Error(
+          "Akun ini bukan akun Nasabah."
+        );
+      }
+
+      // =================================================
       // SIMPAN TOKEN
-      // =========================
+      // =================================================
 
       localStorage.setItem(
         "token",
-        data.token
+        token
       );
 
-      // =========================
+      // =================================================
       // SIMPAN APP KEY
-      // =========================
+      // =================================================
 
       localStorage.setItem(
         "appKey",
         appKey
       );
 
-      // =========================
+      // =================================================
+      // SIMPAN ROLE
+      // =================================================
+
+      localStorage.setItem(
+        "role",
+        "NASABAH"
+      );
+
+      // =================================================
       // SIMPAN DATA USER
-      // =========================
+      // =================================================
 
       localStorage.setItem(
         "user",
-        JSON.stringify(data)
+        JSON.stringify({
+          ...data,
+          ...meData,
+          role: "NASABAH",
+        })
       );
 
-      // =========================
+      // =================================================
       // COOKIE TOKEN
-      // =========================
+      // =================================================
 
       document.cookie =
         `bank_sampah_token=${encodeURIComponent(
-          data.token
+          token
         )}; ` +
         `path=/; ` +
         `max-age=${60 * 60 * 24}; ` +
-        `SameSite=Lax;`;
+        `SameSite=Lax`;
 
-      // =========================
+      // =================================================
       // COOKIE ROLE
-      // =========================
+      // =================================================
 
       document.cookie =
-        `bank_sampah_role=${encodeURIComponent(
-          data.role || "NASABAH"
-        )}; ` +
+        `bank_sampah_role=NASABAH; ` +
         `path=/; ` +
         `max-age=${60 * 60 * 24}; ` +
-        `SameSite=Lax;`;
+        `SameSite=Lax`;
 
-      // =========================
+      // =================================================
       // LOGIN BERHASIL
-      // =========================
+      // =================================================
 
       setSuccess(
         "Login berhasil. Mengarahkan..."
       );
 
-      // =========================
+      // =================================================
       // REDIRECT
-      // =========================
+      // =================================================
 
       setTimeout(() => {
         window.location.replace(
           "/nasabah/dashboard"
         );
       }, 800);
+
     } catch (error) {
       console.error(
         "NASABAH LOGIN ERROR:",
@@ -216,20 +471,22 @@ export default function NasabahLoginPage() {
     }
   };
 
-  // =========================
+  // =====================================================
   // BACK TO HOME
-  // =========================
+  // =====================================================
 
   const handleBackToHome = () => {
     window.location.replace("/");
   };
 
+  // =====================================================
+  // UI
+  // =====================================================
+
   return (
     <main className="min-h-screen bg-[#F7FAF3] px-5 py-10">
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <div className="mx-auto mb-9 max-w-[450px] text-center">
 
@@ -250,9 +507,7 @@ export default function NasabahLoginPage() {
         </p>
       </div>
 
-      {/* =========================
-          LOGIN CARD
-      ========================= */}
+      {/* LOGIN CARD */}
 
       <div className="mx-auto w-full max-w-[450px]">
 
@@ -292,9 +547,12 @@ export default function NasabahLoginPage() {
                 name="username"
                 type="text"
                 value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value)
-                }
+                onChange={(e) => {
+                  setUsername(
+                    e.target.value
+                  );
+                  setError("");
+                }}
                 placeholder="Masukkan username"
                 autoComplete="username"
                 disabled={loading}
@@ -323,9 +581,12 @@ export default function NasabahLoginPage() {
                       : "password"
                   }
                   value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
+                  onChange={(e) => {
+                    setPassword(
+                      e.target.value
+                    );
+                    setError("");
+                  }}
                   placeholder="Masukkan password"
                   autoComplete="current-password"
                   disabled={loading}

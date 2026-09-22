@@ -9,6 +9,40 @@ const API_BASE = (
 
 const APP_KEY = process.env.NEXT_PUBLIC_APP_KEY || "";
 
+// =====================================================
+// HELPER
+// =====================================================
+
+function clearAuth() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("appKey");
+  localStorage.removeItem("role");
+  localStorage.removeItem("user");
+
+  document.cookie =
+    "bank_sampah_token=; path=/; max-age=0";
+
+  document.cookie =
+    "bank_sampah_role=; path=/; max-age=0";
+}
+
+function getUserRole(data: any): string {
+  const possibleRoles = [
+    data?.role,
+    data?.user?.role,
+    data?.data?.role,
+    data?.data?.user?.role,
+  ];
+
+  const role = possibleRoles.find(
+    (value) =>
+      typeof value === "string" &&
+      value.trim() !== ""
+  );
+
+  return role ? String(role).trim().toUpperCase() : "";
+}
+
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -64,12 +98,27 @@ export default function AdminLoginPage() {
       // LOGIN API
       // =================================================
 
-      const loginUrl = `${API_BASE}/api/v1/auth/login`;
+      const loginUrl =
+        `${API_BASE}/api/v1/auth/login`;
 
-      console.log("========== ADMIN LOGIN ==========");
-      console.log("API URL:", loginUrl);
-      console.log("Username:", cleanUsername);
-      console.log("App Key tersedia:", !!APP_KEY);
+      console.log(
+        "========== ADMIN LOGIN =========="
+      );
+
+      console.log(
+        "API URL:",
+        loginUrl
+      );
+
+      console.log(
+        "Username:",
+        cleanUsername
+      );
+
+      console.log(
+        "App Key tersedia:",
+        !!APP_KEY
+      );
 
       const response = await fetch(loginUrl, {
         method: "POST",
@@ -81,12 +130,12 @@ export default function AdminLoginPage() {
 
         body: JSON.stringify({
           username: cleanUsername,
-          password: password,
+          password,
         }),
       });
 
       // =================================================
-      // RESPONSE
+      // RESPONSE LOGIN
       // =================================================
 
       const contentType =
@@ -94,7 +143,9 @@ export default function AdminLoginPage() {
 
       let result: any;
 
-      if (contentType.includes("application/json")) {
+      if (
+        contentType.includes("application/json")
+      ) {
         result = await response.json();
       } else {
         const text = await response.text();
@@ -123,12 +174,18 @@ export default function AdminLoginPage() {
       // HANDLE ERROR BACKEND
       // =================================================
 
-      if (!response.ok || result?.success === false) {
+      if (
+        !response.ok ||
+        result?.success === false
+      ) {
         let message =
           "Username atau password salah.";
 
-        if (Array.isArray(result?.message)) {
-          message = result.message.join(", ");
+        if (
+          Array.isArray(result?.message)
+        ) {
+          message =
+            result.message.join(", ");
         } else if (
           typeof result?.message === "string"
         ) {
@@ -139,7 +196,7 @@ export default function AdminLoginPage() {
       }
 
       // =================================================
-      // AMBIL DATA
+      // AMBIL DATA LOGIN
       // =================================================
 
       const data = result?.data;
@@ -164,16 +221,109 @@ export default function AdminLoginPage() {
       }
 
       // =================================================
-      // CEK ROLE
+      // CEK ROLE SEBENARNYA DENGAN /AUTH/ME
       // =================================================
 
-      const role = data?.role;
+      console.log(
+        "Memeriksa role melalui /auth/me..."
+      );
 
-      console.log("LOGIN ROLE:", role);
+      const meUrl =
+        `${API_BASE}/api/v1/auth/me`;
 
-      if (role && role !== "ADMIN") {
+      const meResponse = await fetch(meUrl, {
+        method: "GET",
+
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "x-app-key": APP_KEY,
+        },
+
+        cache: "no-store",
+      });
+
+      const meContentType =
+        meResponse.headers.get(
+          "content-type"
+        ) || "";
+
+      let meResult: any;
+
+      if (
+        meContentType.includes(
+          "application/json"
+        )
+      ) {
+        meResult = await meResponse.json();
+      } else {
+        const text =
+          await meResponse.text();
+
+        console.error(
+          "Response /auth/me bukan JSON:",
+          text
+        );
+
         throw new Error(
-          "Akun yang digunakan bukan akun Admin."
+          `Gagal mengambil data user. Status: ${meResponse.status}`
+        );
+      }
+
+      console.log(
+        "AUTH ME STATUS:",
+        meResponse.status
+      );
+
+      console.log(
+        "AUTH ME RESPONSE:",
+        meResult
+      );
+
+      // =================================================
+      // VALIDASI AUTH/ME
+      // =================================================
+
+      if (
+        !meResponse.ok ||
+        meResult?.success === false
+      ) {
+        throw new Error(
+          meResult?.message ||
+            "Gagal memverifikasi akun."
+        );
+      }
+
+      // =================================================
+      // AMBIL ROLE SEBENARNYA
+      // =================================================
+
+      const meData = meResult?.data;
+
+      const role = getUserRole(
+        meResult
+      );
+
+      console.log(
+        "ROLE USER SEBENARNYA:",
+        role
+      );
+
+      // =================================================
+      // ROLE WAJIB ADMIN
+      // =================================================
+
+      if (role !== "ADMIN") {
+        clearAuth();
+
+        if (role === "NASABAH") {
+          throw new Error(
+            "Akun ini adalah akun Nasabah. Silakan gunakan Login Nasabah."
+          );
+        }
+
+        throw new Error(
+          "Akun ini bukan akun Admin."
         );
       }
 
@@ -193,19 +343,20 @@ export default function AdminLoginPage() {
 
       localStorage.setItem(
         "role",
-        role || "ADMIN"
+        "ADMIN"
       );
 
       localStorage.setItem(
         "user",
-        JSON.stringify(data)
+        JSON.stringify({
+          ...data,
+          ...meData,
+          role: "ADMIN",
+        })
       );
 
       // =================================================
-      // SIMPAN COOKIE
-      //
-      // Nama cookie ini disamakan dengan AuthGuard/
-      // middleware yang kamu gunakan sebelumnya.
+      // SIMPAN COOKIE TOKEN
       // =================================================
 
       document.cookie =
@@ -216,10 +367,12 @@ export default function AdminLoginPage() {
         `max-age=${60 * 60 * 24}; ` +
         `SameSite=Lax`;
 
+      // =================================================
+      // SIMPAN COOKIE ROLE
+      // =================================================
+
       document.cookie =
-        `bank_sampah_role=${encodeURIComponent(
-          role || "ADMIN"
-        )}; ` +
+        `bank_sampah_role=ADMIN; ` +
         `path=/; ` +
         `max-age=${60 * 60 * 24}; ` +
         `SameSite=Lax`;
@@ -233,8 +386,7 @@ export default function AdminLoginPage() {
       );
 
       console.log(
-        "Role berhasil disimpan:",
-        role || "ADMIN"
+        "Role berhasil disimpan: ADMIN"
       );
 
       // =================================================
@@ -244,6 +396,7 @@ export default function AdminLoginPage() {
       window.location.replace(
         "/admin/dashboard"
       );
+
     } catch (error) {
       console.error(
         "ADMIN LOGIN ERROR:",
@@ -420,6 +573,7 @@ export default function AdminLoginPage() {
         <p className="mt-6 text-center text-xs text-[#8A978C]">
           Bank Sampah Digital Hub © 2026
         </p>
+
       </div>
     </main>
   );
