@@ -6,7 +6,6 @@ import {
   Recycle,
   Coins,
   Banknote,
-  Loader2,
   AlertCircle,
   PackageOpen,
   Filter,
@@ -22,32 +21,15 @@ type KategoriSampah = {
 };
 
 const JENIS_OPTIONS = [
-  {
-    value: "semua",
-    label: "Semua Jenis",
-  },
-  {
-    value: "plastik",
-    label: "Plastik",
-  },
-  {
-    value: "kertas",
-    label: "Kertas",
-  },
-  {
-    value: "logam",
-    label: "Logam",
-  },
-  {
-    value: "kaca",
-    label: "Kaca",
-  },
+  { value: "semua", label: "Semua Jenis" },
+  { value: "plastik", label: "Plastik" },
+  { value: "kertas", label: "Kertas" },
+  { value: "logam", label: "Logam" },
+  { value: "kaca", label: "Kaca" },
 ];
 
 function getToken() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+  if (typeof window === "undefined") return "";
 
   return (
     localStorage.getItem("token") ||
@@ -58,9 +40,7 @@ function getToken() {
 }
 
 function getAppKey() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+  if (typeof window === "undefined") return "";
 
   return (
     localStorage.getItem("appKey") ||
@@ -75,7 +55,7 @@ function getBaseUrl() {
     process.env.NEXT_PUBLIC_BASE_API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     ""
-  ).replace(/\/$/, "");
+  ).replace(/\/+$/, "");
 }
 
 function formatRupiah(value: number) {
@@ -87,9 +67,7 @@ function formatRupiah(value: number) {
 }
 
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("id-ID").format(
-    value || 0
-  );
+  return new Intl.NumberFormat("id-ID").format(value || 0);
 }
 
 function getJenisStyle(jenis: string) {
@@ -97,56 +75,51 @@ function getJenisStyle(jenis: string) {
     case "plastik":
       return {
         badge:
-          "bg-[#e8f2e6] text-[#4f7045] border-[#d2e2cd]",
-        icon: "bg-[#edf5ea] text-[#5c7a53]",
+          "bg-[#EEF7EA] text-[#2A7C13] border-[#D4E8CE]",
+        icon:
+          "bg-[#E5F3DF] text-[#2A7C13]",
       };
 
     case "kertas":
       return {
         badge:
-          "bg-[#f5eee1] text-[#8a6d45] border-[#e7dbc7]",
-        icon: "bg-[#f8f2e8] text-[#95784e]",
+          "bg-[#FFF8CF] text-[#806D25] border-[#F0DFA2]",
+        icon:
+          "bg-[#FFF8CF] text-[#806D25]",
       };
 
     case "logam":
       return {
         badge:
-          "bg-[#eceeea] text-[#687269] border-[#dce0da]",
-        icon: "bg-[#f0f2ef] text-[#737c75]",
+          "bg-[#F8FAF5] text-[#5E6B5A] border-[#DDE8D8]",
+        icon:
+          "bg-[#EEF7EA] text-[#5E6B5A]",
       };
 
     case "kaca":
       return {
         badge:
-          "bg-[#e7f0ef] text-[#4f7470] border-[#d0e0de]",
-        icon: "bg-[#edf5f4] text-[#5d807c]",
+          "bg-[#EEF7EA] text-[#3D7040] border-[#D4E8CE]",
+        icon:
+          "bg-[#E5F3DF] text-[#477746]",
       };
 
     default:
       return {
         badge:
-          "bg-[#f0ece7] text-[#716a62] border-[#e2dbd2]",
-        icon: "bg-[#f5f1eb] text-[#777067]",
+          "bg-[#FBE6C2] text-[#7C6338] border-[#F0DDBB]",
+        icon:
+          "bg-[#FBE6C2] text-[#80663A]",
       };
   }
 }
 
 export default function KategoriSampahPage() {
-  const [data, setData] = useState<
-    KategoriSampah[]
-  >([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const [search, setSearch] =
-    useState("");
-
-  const [jenis, setJenis] =
-    useState("semua");
+  const [data, setData] = useState<KategoriSampah[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [jenis, setJenis] = useState("semua");
 
   async function fetchKategori() {
     try {
@@ -166,8 +139,7 @@ export default function KategoriSampahPage() {
         {
           method: "GET",
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
             "x-app-key": getAppKey(),
             Authorization: `Bearer ${getToken()}`,
           },
@@ -176,17 +148,10 @@ export default function KategoriSampahPage() {
       );
 
       const contentType =
-        response.headers.get(
-          "content-type"
-        );
+        response.headers.get("content-type");
 
-      if (
-        !contentType?.includes(
-          "application/json"
-        )
-      ) {
-        const text =
-          await response.text();
+      if (!contentType?.includes("application/json")) {
+        const text = await response.text();
 
         console.error(
           "Response bukan JSON:",
@@ -198,39 +163,25 @@ export default function KategoriSampahPage() {
         );
       }
 
-      const result =
-        await response.json();
+      const result = await response.json();
 
       console.log(
         "KATEGORI SAMPAH:",
         result
       );
 
-      if (
-        !response.ok ||
-        !result?.success
-      ) {
+      if (!response.ok || !result?.success) {
         let message =
           result?.message ||
           "Gagal mengambil kategori sampah.";
 
-        if (
-          Array.isArray(message)
-        ) {
-          message =
-            message.join(", ");
+        if (Array.isArray(message)) {
+          message = message.join(", ");
         }
 
         throw new Error(message);
       }
 
-      /*
-       * API:
-       * {
-       *   success: true,
-       *   data: [...]
-       * }
-       */
       setData(
         Array.isArray(result.data)
           ? result.data
@@ -275,9 +226,7 @@ export default function KategoriSampahPage() {
         item.jenis.toLowerCase() ===
           jenis.toLowerCase();
 
-      return (
-        matchSearch && matchJenis
-      );
+      return matchSearch && matchJenis;
     });
   }, [data, search, jenis]);
 
@@ -289,54 +238,49 @@ export default function KategoriSampahPage() {
     0
   );
 
+  const resetFilter = () => {
+    setSearch("");
+    setJenis("semua");
+  };
+
   return (
-    <main className="min-h-screen bg-[#f7f4ee] px-5 py-7 text-[#403c36] md:px-8 lg:px-10">
+    <main className="min-h-screen bg-[#F8FAF5] px-5 py-7 text-[#243321] md:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        {/* =====================================
-            HEADER
-        ====================================== */}
 
+        {/* HEADER */}
         <div className="mb-7">
-          <div className="mb-2 flex items-center gap-2 text-sm text-[#8b8277]">
+          <div className="mb-2 flex items-center gap-2 text-sm text-[#71806D]">
             <Recycle size={16} />
-
             <span>Nasabah</span>
-
             <span>/</span>
-
-            <span>
-              Kategori Sampah
-            </span>
+            <span>Kategori Sampah</span>
           </div>
 
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#38352f] md:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-[#243321] md:text-3xl">
                 Kategori Sampah
               </h1>
 
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#8c847a]">
-                Lihat jenis sampah yang
-                dapat disetorkan beserta
-                harga dan poin yang kamu
-                dapatkan.
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#71806D]">
+                Lihat jenis sampah yang dapat
+                disetorkan beserta harga dan
+                poin yang kamu dapatkan.
               </p>
             </div>
 
-            {/* INFO JUMLAH */}
-            <div className="flex items-center gap-2 rounded-xl border border-[#e4ddd3] bg-[#fffdf9] px-4 py-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e8f2e6] text-[#5c7a53]">
-                <PackageOpen
-                  size={18}
-                />
+            {/* JUMLAH KATEGORI */}
+            <div className="flex items-center gap-2 rounded-xl border border-[#DDE8D8] bg-white px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EEF7EA] text-[#2A7C13]">
+                <PackageOpen size={18} />
               </div>
 
               <div>
-                <p className="text-[11px] text-[#968d82]">
+                <p className="text-[11px] text-[#71806D]">
                   Jenis tersedia
                 </p>
 
-                <p className="text-sm font-semibold text-[#403c36]">
+                <p className="text-sm font-semibold text-[#243321]">
                   {totalJenis} kategori
                 </p>
               </div>
@@ -344,24 +288,22 @@ export default function KategoriSampahPage() {
           </div>
         </div>
 
-        {/* =====================================
-            INFO CARDS
-        ====================================== */}
-
+        {/* INFO CARDS */}
         <div className="mb-6 grid gap-4 sm:grid-cols-2">
+
           {/* HARGA */}
-          <div className="rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] p-5 shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
+          <div className="rounded-2xl border border-[#DDE8D8] bg-white p-5 shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f4eadc] text-[#98754d]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FBE6C2] text-[#80663A]">
                 <Banknote size={20} />
               </div>
 
               <div>
-                <p className="text-xs text-[#948b80]">
+                <p className="text-xs text-[#71806D]">
                   Harga sesuai kategori
                 </p>
 
-                <p className="mt-0.5 text-sm font-semibold text-[#403c36]">
+                <p className="mt-0.5 text-sm font-semibold text-[#243321]">
                   Dihitung per kilogram
                 </p>
               </div>
@@ -369,93 +311,79 @@ export default function KategoriSampahPage() {
           </div>
 
           {/* POIN */}
-          <div className="rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] p-5 shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
+          <div className="rounded-2xl border border-[#DDE8D8] bg-white p-5 shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f2e6] text-[#5c7a53]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF8CF] text-[#806D25]">
                 <Coins size={20} />
               </div>
 
               <div>
-                <p className="text-xs text-[#948b80]">
+                <p className="text-xs text-[#71806D]">
                   Total nilai poin kategori
                 </p>
 
-                <p className="mt-0.5 text-sm font-semibold text-[#403c36]">
-                  {formatNumber(
-                    totalPoin
-                  )}{" "}
-                  poin/kg
+                <p className="mt-0.5 text-sm font-semibold text-[#243321]">
+                  {formatNumber(totalPoin)} poin/kg
                 </p>
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* =====================================
-            FILTER
-        ====================================== */}
-
-        <section className="mb-6 rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] p-4 shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
+        {/* FILTER */}
+        <section className="mb-6 rounded-2xl border border-[#DDE8D8] bg-white p-4 shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            {/* SEARCH */}
 
+            {/* SEARCH */}
             <div className="relative w-full md:max-w-md">
               <Search
                 size={17}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a29a8f]"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71806D]"
               />
 
               <input
                 type="text"
                 value={search}
                 onChange={(e) =>
-                  setSearch(
-                    e.target.value
-                  )
+                  setSearch(e.target.value)
                 }
                 placeholder="Cari jenis sampah..."
-                className="h-11 w-full rounded-xl border border-[#e4ddd3] bg-[#faf7f2] pl-10 pr-4 text-sm text-[#403c36] outline-none transition placeholder:text-[#aaa196] focus:border-[#a8b69e] focus:bg-white"
+                className="h-11 w-full rounded-xl border border-[#DDE8D8] bg-[#F8FAF5] pl-10 pr-4 text-sm text-[#243321] outline-none transition placeholder:text-[#9BA69A] focus:border-[#76C457] focus:bg-white focus:ring-2 focus:ring-[#76C457]/10"
               />
             </div>
 
             {/* JENIS */}
-
             <div className="relative">
               <Filter
                 size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#958c81]"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71806D]"
               />
 
               <select
                 value={jenis}
                 onChange={(e) =>
-                  setJenis(
-                    e.target.value
-                  )
+                  setJenis(e.target.value)
                 }
-                className="h-11 w-full appearance-none rounded-xl border border-[#e4ddd3] bg-[#faf7f2] pl-9 pr-10 text-sm text-[#5d574f] outline-none focus:border-[#a8b69e] md:w-52"
+                className="h-11 w-full appearance-none rounded-xl border border-[#DDE8D8] bg-[#F8FAF5] pl-9 pr-10 text-sm text-[#4D5A49] outline-none focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 md:w-52"
               >
-                {JENIS_OPTIONS.map(
-                  (item) => (
-                    <option
-                      key={item.value}
-                      value={item.value}
-                    >
-                      {item.label}
-                    </option>
-                  )
-                )}
+                {JENIS_OPTIONS.map((item) => (
+                  <option
+                    key={item.value}
+                    value={item.value}
+                  >
+                    {item.label}
+                  </option>
+                ))}
               </select>
             </div>
+
           </div>
         </section>
 
-        {/* =====================================
-            ERROR
-        ====================================== */}
-
+        {/* ERROR */}
         {error && (
-          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#e7c9c2] bg-[#fbefec] p-4 text-sm text-[#a55e52]">
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#E9C9C2] bg-[#FFF4F1] p-4 text-sm text-[#A55E52]">
             <AlertCircle
               size={18}
               className="mt-0.5 shrink-0"
@@ -472,9 +400,7 @@ export default function KategoriSampahPage() {
 
               <button
                 type="button"
-                onClick={
-                  fetchKategori
-                }
+                onClick={fetchKategori}
                 className="mt-3 font-medium underline underline-offset-2"
               >
                 Coba lagi
@@ -483,250 +409,209 @@ export default function KategoriSampahPage() {
           </div>
         )}
 
-        {/* =====================================
-            LOADING
-        ====================================== */}
-
+        {/* LOADING */}
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({
-              length: 6,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9]"
-              >
-                <div className="h-48 animate-pulse bg-[#eee9e1]" />
+            {Array.from({ length: 6 }).map(
+              (_, index) => (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-2xl border border-[#DDE8D8] bg-white"
+                >
+                  <div className="h-48 animate-pulse bg-[#EEF7EA]" />
 
-                <div className="space-y-4 p-5">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-[#eee9e1]" />
+                  <div className="space-y-4 p-5">
+                    <div className="h-5 w-2/3 animate-pulse rounded bg-[#EEF7EA]" />
 
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-[#eee9e1]" />
+                    <div className="h-4 w-1/3 animate-pulse rounded bg-[#EEF7EA]" />
 
-                  <div className="h-16 animate-pulse rounded-xl bg-[#eee9e1]" />
+                    <div className="h-16 animate-pulse rounded-xl bg-[#EEF7EA]" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         ) : filteredData.length === 0 ? (
-          /* =====================================
-             EMPTY
-          ====================================== */
 
-          <div className="rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] px-6 py-16 text-center shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#eee9e1] text-[#91887d]">
-              <PackageOpen
-                size={28}
-              />
+          /* EMPTY */
+          <div className="rounded-2xl border border-[#DDE8D8] bg-white px-6 py-16 text-center shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FBE6C2] text-[#80663A]">
+              <PackageOpen size={28} />
             </div>
 
-            <h3 className="mt-4 font-semibold text-[#504a42]">
+            <h3 className="mt-4 font-semibold text-[#3B4937]">
               Kategori tidak ditemukan
             </h3>
 
-            <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[#958c81]">
+            <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[#71806D]">
               Coba ubah kata pencarian
               atau filter jenis sampah.
             </p>
 
-            {(search ||
-              jenis !== "semua") && (
+            {(search || jenis !== "semua") && (
               <button
                 type="button"
-                onClick={() => {
-                  setSearch("");
-                  setJenis("semua");
-                }}
-                className="mt-4 rounded-xl bg-[#718467] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#607456]"
+                onClick={resetFilter}
+                className="mt-4 rounded-xl bg-[#2A7C13] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#236A10]"
               >
                 Reset Filter
               </button>
             )}
           </div>
+
         ) : (
-          /* =====================================
-             CARDS
-          ====================================== */
 
+          /* CARDS */
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredData.map(
-              (item) => {
-                const style =
-                  getJenisStyle(
-                    item.jenis
-                  );
+            {filteredData.map((item) => {
+              const style =
+                getJenisStyle(item.jenis);
 
-                return (
-                  <article
-                    key={item.id}
-                    className="group overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(86,72,52,0.08)]"
-                  >
-                    {/* FOTO */}
+              return (
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-2xl border border-[#DDE8D8] bg-white shadow-[0_5px_22px_rgba(42,124,19,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(42,124,19,0.08)]"
+                >
 
-                    <div className="relative h-48 overflow-hidden bg-[#eee9e1]">
-                      {item.foto ? (
-                        <img
-                          src={
-                            item.foto
-                          }
-                          alt={
-                            item.namaKategori
-                          }
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                          onError={(
-                            e
-                          ) => {
-                            e.currentTarget.style.display =
-                              "none";
-                          }}
+                  {/* FOTO */}
+                  <div className="relative h-48 overflow-hidden bg-[#EEF7EA]">
+                    {item.foto ? (
+                      <img
+                        src={item.foto}
+                        alt={item.namaKategori}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        onError={(e) => {
+                          e.currentTarget.style.display =
+                            "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-[#EEF7EA] text-[#2A7C13]">
+                        <Recycle
+                          size={45}
+                          strokeWidth={1.4}
                         />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#eef2ea] text-[#7c8c75]">
-                          <Recycle
-                            size={45}
-                            strokeWidth={
-                              1.4
-                            }
-                          />
-                        </div>
-                      )}
-
-                      {/* BADGE JENIS */}
-
-                      <div className="absolute left-4 top-4">
-                        <span
-                          className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold capitalize ${style.badge}`}
-                        >
-                          {item.jenis}
-                        </span>
                       </div>
+                    )}
+
+                    {/* BADGE */}
+                    <div className="absolute left-4 top-4">
+                      <span
+                        className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold capitalize ${style.badge}`}
+                      >
+                        {item.jenis}
+                      </span>
                     </div>
+                  </div>
 
-                    {/* CONTENT */}
+                  {/* CONTENT */}
+                  <div className="p-5">
+                    <h2 className="min-h-[48px] text-[17px] font-semibold leading-6 text-[#243321]">
+                      {item.namaKategori}
+                    </h2>
 
-                    <div className="p-5">
-                      <h2 className="min-h-[48px] text-[17px] font-semibold leading-6 text-[#403c36]">
-                        {
-                          item.namaKategori
-                        }
-                      </h2>
+                    <p className="mt-1 text-xs text-[#71806D]">
+                      Nilai berdasarkan setiap
+                      1 kilogram
+                    </p>
 
-                      <p className="mt-1 text-xs text-[#978e83]">
-                        Nilai berdasarkan
-                        setiap 1 kilogram
-                      </p>
+                    {/* HARGA + POIN */}
+                    <div className="mt-5 grid grid-cols-2 gap-3">
 
                       {/* HARGA */}
-
-                      <div className="mt-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-[#e7dfd5] bg-[#faf7f2] p-3.5">
-                          <div className="mb-2 flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f2e9dc] text-[#96754e]">
-                              <Banknote
-                                size={14}
-                              />
-                            </div>
-
-                            <span className="text-[11px] text-[#948b80]">
-                              Harga
-                            </span>
+                      <div className="rounded-xl border border-[#F0DDBB] bg-[#FFF4DF] p-3.5">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FBE6C2] text-[#80663A]">
+                            <Banknote size={14} />
                           </div>
 
-                          <p className="text-sm font-semibold text-[#514b43]">
-                            {formatRupiah(
-                              item.hargaPerKg
-                            )}
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-[#a0988d]">
-                            / kg
-                          </p>
+                          <span className="text-[11px] text-[#80663A]">
+                            Harga
+                          </span>
                         </div>
 
-                        {/* POIN */}
+                        <p className="text-sm font-semibold text-[#51462F]">
+                          {formatRupiah(
+                            item.hargaPerKg
+                          )}
+                        </p>
 
-                        <div className="rounded-xl border border-[#dce6d8] bg-[#f1f5ef] p-3.5">
-                          <div className="mb-2 flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#e2ecde] text-[#5c7653]">
-                              <Coins
-                                size={14}
-                              />
-                            </div>
-
-                            <span className="text-[11px] text-[#778473]">
-                              Poin
-                            </span>
-                          </div>
-
-                          <p className="text-sm font-semibold text-[#526b4b]">
-                            {formatNumber(
-                              item.poinPerKg
-                            )}
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-[#8a9685]">
-                            poin / kg
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* INFO */}
-
-                      <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#f5f2eb] px-3.5 py-3">
-                        <div
-                          className={`flex h-7 w-7 items-center justify-center rounded-lg ${style.icon}`}
-                        >
-                          <Recycle
-                            size={14}
-                          />
-                        </div>
-
-                        <p className="text-xs leading-5 text-[#777067]">
-                          Setorkan sampah
-                          sesuai kategori
-                          untuk mendapatkan
-                          poin.
+                        <p className="mt-0.5 text-[10px] text-[#8E8067]">
+                          / kg
                         </p>
                       </div>
+
+                      {/* POIN */}
+                      <div className="rounded-xl border border-[#D4E8CE] bg-[#EEF7EA] p-3.5">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E5F3DF] text-[#2A7C13]">
+                            <Coins size={14} />
+                          </div>
+
+                          <span className="text-[11px] text-[#2A7C13]">
+                            Poin
+                          </span>
+                        </div>
+
+                        <p className="text-sm font-semibold text-[#2A7C13]">
+                          {formatNumber(
+                            item.poinPerKg
+                          )}
+                        </p>
+
+                        <p className="mt-0.5 text-[10px] text-[#5E6F59]">
+                          poin / kg
+                        </p>
+                      </div>
+
                     </div>
-                  </article>
-                );
-              }
-            )}
+
+                    {/* INFO */}
+                    <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F8FAF5] px-3.5 py-3">
+                      <div
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg ${style.icon}`}
+                      >
+                        <Recycle size={14} />
+                      </div>
+
+                      <p className="text-xs leading-5 text-[#5E6F59]">
+                        Setorkan sampah sesuai
+                        kategori untuk
+                        mendapatkan poin.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
 
-        {/* =====================================
-            FOOTER NOTE
-        ====================================== */}
-
+        {/* FOOTER NOTE */}
         {!loading &&
-          filteredData.length >
-            0 && (
-            <div className="mt-7 rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] px-5 py-4">
+          filteredData.length > 0 && (
+            <div className="mt-7 rounded-2xl border border-[#DDE8D8] bg-white px-5 py-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#e8f2e6] text-[#5c7a53]">
-                  <Recycle
-                    size={15}
-                  />
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EEF7EA] text-[#2A7C13]">
+                  <Recycle size={15} />
                 </div>
 
                 <div>
-                  <p className="text-xs font-semibold text-[#625b52]">
+                  <p className="text-xs font-semibold text-[#3B4937]">
                     Informasi
                   </p>
 
-                  <p className="mt-0.5 text-xs leading-5 text-[#948b80]">
+                  <p className="mt-0.5 text-xs leading-5 text-[#71806D]">
                     Harga dan poin yang
-                    ditampilkan mengikuti
-                    data kategori sampah
-                    yang tersedia di Bank
-                    Sampah.
+                    ditampilkan mengikuti data
+                    kategori sampah yang
+                    tersedia di Bank Sampah.
                   </p>
                 </div>
               </div>
             </div>
           )}
+
       </div>
     </main>
   );

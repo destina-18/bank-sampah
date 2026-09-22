@@ -54,9 +54,7 @@ type Penukaran = {
   tanggal: string;
   poinTerpakai: number;
   status: string;
-
   nasabah?: Nasabah;
-
   hadiah?: HadiahNota;
 };
 
@@ -66,9 +64,7 @@ type NotaData = {
   tanggal: string;
   poinTerpakai: number;
   status: string;
-
   nasabah?: Nasabah;
-
   hadiah?: HadiahNota;
 };
 
@@ -258,7 +254,6 @@ export default function TukarPoinPage() {
     useState<Hadiah | null>(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [showHistory, setShowHistory] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -797,13 +792,6 @@ export default function TukarPoinPage() {
       setDownloadingPdf(true);
       setNotaError("");
 
-      /*
-       * Kalau notaData sudah berhasil diambil,
-       * gunakan data tersebut.
-       *
-       * Kalau belum ada, ambil ulang dari API.
-       */
-
       let data: NotaData;
 
       if (notaData) {
@@ -850,10 +838,6 @@ export default function TukarPoinPage() {
         setNotaData(data);
       }
 
-      /* =====================================================
-         DATA PDF
-      ===================================================== */
-
       const kode =
         data.kodePenukaran ||
         selectedNota.kodePenukaran ||
@@ -896,10 +880,6 @@ export default function TukarPoinPage() {
         selectedNota.nasabah?.telp ||
         "-";
 
-      /* =====================================================
-         CREATE PDF
-      ===================================================== */
-
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -910,8 +890,6 @@ export default function TukarPoinPage() {
         pdf.internal.pageSize.getWidth();
 
       let y = 18;
-
-      /* Header */
 
       pdf.setFont(
         "helvetica",
@@ -963,8 +941,6 @@ export default function TukarPoinPage() {
       );
 
       y += 10;
-
-      /* Helper row */
 
       const row = (
         label: string,
@@ -1041,8 +1017,6 @@ export default function TukarPoinPage() {
 
       y += 9;
 
-      /* Nasabah */
-
       pdf.setFont(
         "helvetica",
         "bold"
@@ -1075,8 +1049,6 @@ export default function TukarPoinPage() {
       );
 
       y += 2;
-
-      /* Transaksi */
 
       pdf.setFont(
         "helvetica",
@@ -1112,8 +1084,6 @@ export default function TukarPoinPage() {
       );
 
       y += 5;
-
-      /* Box poin */
 
       pdf.setFillColor(
         237,
@@ -1164,8 +1134,6 @@ export default function TukarPoinPage() {
       );
 
       y += 28;
-
-      /* Footer */
 
       pdf.setDrawColor(
         180,
@@ -1228,10 +1196,6 @@ export default function TukarPoinPage() {
         }
       );
 
-      /* =====================================================
-         SAVE
-      ===================================================== */
-
       pdf.save(
         `nota-penukaran-${kode}.pdf`
       );
@@ -1259,9 +1223,7 @@ export default function TukarPoinPage() {
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-7 text-[#403c36] md:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
 
         <div className="mb-7">
           <div className="mb-2 flex items-center gap-2 text-sm text-[#8b8277]">
@@ -1274,42 +1236,20 @@ export default function TukarPoinPage() {
             <span>Tukar Poin</span>
           </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#38352f] md:text-3xl">
-                Tukar Poin
-              </h1>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#2A7C13] md:text-3xl">
+              Tukar Poin
+            </h1>
 
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#8c847a]">
-                Gunakan poin yang kamu kumpulkan
-                untuk mendapatkan hadiah atau
-                voucher yang tersedia.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowHistory(
-                  !showHistory
-                )
-              }
-              className={`flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition ${
-                showHistory
-                  ? "border-[#cfdcc9] bg-[#e8f2e6] text-[#4f7048]"
-                  : "border-[#e3ddd4] bg-[#fffdf9] text-[#696157] hover:bg-[#f5f2ec]"
-              }`}
-            >
-              <History size={17} />
-
-              Riwayat Penukaran
-            </button>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#71806D]">
+              Gunakan poin yang kamu kumpulkan
+              untuk mendapatkan hadiah atau
+              voucher yang tersedia.
+            </p>
           </div>
         </div>
 
-        {/* =================================================
-            SALDO
-        ================================================= */}
+        {/* SALDO */}
 
         <section className="mb-7 overflow-hidden rounded-2xl border border-[#dce6d8] bg-[#edf4ea]">
           <div className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
@@ -1357,9 +1297,7 @@ export default function TukarPoinPage() {
           </div>
         </section>
 
-        {/* =================================================
-            SUCCESS
-        ================================================= */}
+        {/* SUCCESS */}
 
         {successMessage && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#cfe0cb] bg-[#edf6eb] p-4 text-sm text-[#52744b]">
@@ -1390,9 +1328,7 @@ export default function TukarPoinPage() {
           </div>
         )}
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
+        {/* ERROR */}
 
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#e7c9c2] bg-[#fbefec] p-4 text-sm text-[#a15e55]">
@@ -1421,9 +1357,7 @@ export default function TukarPoinPage() {
           </div>
         )}
 
-        {/* =================================================
-            ACTION ERROR
-        ================================================= */}
+        {/* ACTION ERROR */}
 
         {actionError && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#eadfcb] bg-[#fffaf0] p-4 text-sm text-[#75633d]">
@@ -1453,141 +1387,133 @@ export default function TukarPoinPage() {
           </div>
         )}
 
-        {/* =================================================
-            RIWAYAT
-        ================================================= */}
+        {/* RIWAYAT PENUKARAN */}
 
-        {showHistory && (
-          <section className="mb-7 rounded-2xl border border-[#e5ded4] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)]">
-            <div className="border-b border-[#eee8df] px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0ebe4] text-[#777067]">
-                  <History size={17} />
-                </div>
+        <section className="mb-7 rounded-2xl border border-[#DDE8D8] bg-white shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
+          <div className="border-b border-[#eee8df] px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0ebe4] text-[#777067]">
+                <History size={17} />
+              </div>
 
-                <div>
-                  <h2 className="text-sm font-semibold text-[#4a453e]">
-                    Riwayat Penukaran
-                  </h2>
+              <div>
+                <h2 className="text-sm font-semibold text-[#4a453e]">
+                  Riwayat Penukaran
+                </h2>
 
-                  <p className="text-xs text-[#968d82]">
-                    Daftar penukaran poin yang
-                    pernah kamu lakukan.
-                  </p>
-                </div>
+                <p className="text-xs text-[#968d82]">
+                  Daftar penukaran poin yang
+                  pernah kamu lakukan.
+                </p>
               </div>
             </div>
+          </div>
 
-            {loadingRiwayat ? (
-              <div className="space-y-3 p-5">
-                {Array.from({
-                  length: 3,
-                }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-20 animate-pulse rounded-xl bg-[#f0ece5]"
-                  />
-                ))}
-              </div>
-            ) : riwayat.length === 0 ? (
-              <div className="px-5 py-10 text-center">
-                <Package
-                  size={28}
-                  className="mx-auto text-[#aaa197]"
+          {loadingRiwayat ? (
+            <div className="space-y-3 p-5">
+              {Array.from({
+                length: 3,
+              }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-20 animate-pulse rounded-xl bg-[#f0ece5]"
                 />
+              ))}
+            </div>
+          ) : riwayat.length === 0 ? (
+            <div className="px-5 py-10 text-center">
+              <Package
+                size={28}
+                className="mx-auto text-[#aaa197]"
+              />
 
-                <p className="mt-3 text-sm font-medium text-[#655f56]">
-                  Belum ada penukaran
-                </p>
+              <p className="mt-3 text-sm font-medium text-[#655f56]">
+                Belum ada penukaran
+              </p>
 
-                <p className="mt-1 text-xs text-[#9a9288]">
-                  Riwayat penukaran kamu akan
-                  muncul di sini.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-[#eee8df]">
-                {riwayat.map((item) => {
-                  const status =
-                    getStatusStyle(
-                      item.status
-                    );
+              <p className="mt-1 text-xs text-[#9a9288]">
+                Riwayat penukaran kamu akan
+                muncul di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#eee8df]">
+              {riwayat.map((item) => {
+                const status =
+                  getStatusStyle(
+                    item.status
+                  );
 
-                  const StatusIcon =
-                    status.icon;
+                const StatusIcon =
+                  status.icon;
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f3efe9] text-[#777067]">
-                          <Gift size={18} />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-[#4c4740]">
-                            {item.hadiah
-                              ?.namaHadiah ||
-                              "-"}
-                          </p>
-
-                          <p className="mt-1 text-xs text-[#958c82]">
-                            {item.kodePenukaran}
-                            {" · "}
-                            {formatDate(
-                              item.tanggal
-                            )}
-                          </p>
-                        </div>
+                return (
+                  <div
+                    key={item.id}
+                    className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between"
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f3efe9] text-[#777067]">
+                        <Gift size={18} />
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
-                        <p className="text-sm font-semibold text-[#536b4d]">
-                          -
-                          {formatNumber(
-                            item.poinTerpakai
-                          )}{" "}
-                          poin
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#4c4740]">
+                          {item.hadiah
+                            ?.namaHadiah ||
+                            "-"}
                         </p>
 
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium ${status.className}`}
-                        >
-                          <StatusIcon size={13} />
-
-                          {getStatusLabel(
-                            item.status
+                        <p className="mt-1 text-xs text-[#958c82]">
+                          {item.kodePenukaran}
+                          {" · "}
+                          {formatDate(
+                            item.tanggal
                           )}
-                        </span>
-
-                        {/* TOMBOL NOTA */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            fetchNota(item)
-                          }
-                          className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dcd6cd] bg-white px-3 text-xs font-medium text-[#5f695c] transition hover:bg-[#f3f0ea]"
-                        >
-                          <FileText
-                            size={14}
-                          />
-
-                          Nota
-                        </button>
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
 
-        {/* =================================================
-            SEARCH
-        ================================================= */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
+                      <p className="text-sm font-semibold text-[#536b4d]">
+                        -
+                        {formatNumber(
+                          item.poinTerpakai
+                        )}{" "}
+                        poin
+                      </p>
+
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium ${status.className}`}
+                      >
+                        <StatusIcon size={13} />
+
+                        {getStatusLabel(
+                          item.status
+                        )}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          fetchNota(item)
+                        }
+                        className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dcd6cd] bg-white px-3 text-xs font-medium text-[#5f695c] transition hover:bg-[#f3f0ea]"
+                      >
+                        <FileText
+                          size={14}
+                        />
+
+                        Nota
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+                {/* SEARCH */}
 
         <section className="mb-6">
           <div className="relative max-w-md">
@@ -1610,9 +1536,7 @@ export default function TukarPoinPage() {
           </div>
         </section>
 
-        {/* =================================================
-            TITLE HADIAH
-        ================================================= */}
+        {/* TITLE HADIAH */}
 
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -1640,9 +1564,7 @@ export default function TukarPoinPage() {
           </button>
         </div>
 
-        {/* =================================================
-            LOADING HADIAH
-        ================================================= */}
+        {/* LOADING HADIAH */}
 
         {loadingHadiah ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -1926,8 +1848,7 @@ export default function TukarPoinPage() {
             </div>
           </div>
         )}
-
-      {/* =====================================================
+              {/* =====================================================
           MODAL NOTA
       ===================================================== */}
 
@@ -1936,12 +1857,11 @@ export default function TukarPoinPage() {
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#e4ddd3] bg-[#fffdf9] shadow-[0_20px_60px_rgba(45,55,45,0.18)]">
 
             {/* HEADER */}
+
             <div className="flex items-center justify-between border-b border-[#eee8df] px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f2e6] text-[#55764e]">
-                  <FileText
-                    size={18}
-                  />
+                  <FileText size={18} />
                 </div>
 
                 <div>
@@ -1969,6 +1889,7 @@ export default function TukarPoinPage() {
             </div>
 
             {/* BODY */}
+
             <div className="p-5">
               {loadingNota ? (
                 <div className="py-12 text-center">
@@ -2024,6 +1945,7 @@ export default function TukarPoinPage() {
               ) : notaData ? (
                 <>
                   {/* NOTA PREVIEW */}
+
                   <div className="rounded-2xl border border-[#e3ddd4] bg-white p-5">
                     <div className="text-center">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f2e6] text-[#4f7048]">
@@ -2043,6 +1965,7 @@ export default function TukarPoinPage() {
                     <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
 
                     {/* KODE */}
+
                     <div className="rounded-xl bg-[#f5f2ec] p-4 text-center">
                       <p className="text-[10px] uppercase tracking-[0.12em] text-[#958c82]">
                         Kode Transaksi
@@ -2056,6 +1979,7 @@ export default function TukarPoinPage() {
                     </div>
 
                     {/* DATA */}
+
                     <div className="mt-5 space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <span className="text-xs text-[#8e867c]">
@@ -2140,6 +2064,7 @@ export default function TukarPoinPage() {
                     <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
 
                     {/* TOTAL */}
+
                     <div className="rounded-xl bg-[#edf4ea] p-4 text-center">
                       <p className="text-[10px] uppercase tracking-[0.1em] text-[#7f8d79]">
                         Total Poin Digunakan
@@ -2161,6 +2086,7 @@ export default function TukarPoinPage() {
                   </div>
 
                   {/* DOWNLOAD */}
+
                   <button
                     type="button"
                     onClick={

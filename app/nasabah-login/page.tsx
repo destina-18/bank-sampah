@@ -13,6 +13,10 @@ export default function NasabahLoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // =========================
+  // HANDLE LOGIN
+  // =========================
+
   const handleLogin = async (
     e: FormEvent<HTMLFormElement>
   ) => {
@@ -68,13 +72,13 @@ export default function NasabahLoginPage() {
           },
           body: JSON.stringify({
             username: username.trim(),
-            password: password,
+            password,
           }),
         }
       );
 
       // =========================
-      // CEK CONTENT TYPE
+      // CEK RESPONSE
       // =========================
 
       const contentType =
@@ -101,7 +105,7 @@ export default function NasabahLoginPage() {
       }
 
       // =========================
-      // CEK RESPONSE API
+      // VALIDASI RESPONSE API
       // =========================
 
       if (!response.ok || !result.success) {
@@ -147,7 +151,7 @@ export default function NasabahLoginPage() {
       );
 
       // =========================
-      // SIMPAN DATA NASABAH
+      // SIMPAN DATA USER
       // =========================
 
       localStorage.setItem(
@@ -156,20 +160,28 @@ export default function NasabahLoginPage() {
       );
 
       // =========================
-      // SIMPAN TOKEN COOKIE
+      // COOKIE TOKEN
       // =========================
 
       document.cookie =
-  `bank_sampah_token=${encodeURIComponent(data.token)}; ` +
-  `path=/; ` +
-  `max-age=${60 * 60 * 24}; ` +
-  `SameSite=Lax;`;
+        `bank_sampah_token=${encodeURIComponent(
+          data.token
+        )}; ` +
+        `path=/; ` +
+        `max-age=${60 * 60 * 24}; ` +
+        `SameSite=Lax;`;
 
-document.cookie =
-  `bank_sampah_role=${encodeURIComponent(data.role || "NASABAH")}; ` +
-  `path=/; ` +
-  `max-age=${60 * 60 * 24}; ` +
-  `SameSite=Lax;`;
+      // =========================
+      // COOKIE ROLE
+      // =========================
+
+      document.cookie =
+        `bank_sampah_role=${encodeURIComponent(
+          data.role || "NASABAH"
+        )}; ` +
+        `path=/; ` +
+        `max-age=${60 * 60 * 24}; ` +
+        `SameSite=Lax;`;
 
       // =========================
       // LOGIN BERHASIL
@@ -180,7 +192,7 @@ document.cookie =
       );
 
       // =========================
-      // MASUK HALAMAN NASABAH
+      // REDIRECT
       // =========================
 
       setTimeout(() => {
@@ -205,7 +217,7 @@ document.cookie =
   };
 
   // =========================
-  // KEMBALI KE HOME
+  // BACK TO HOME
   // =========================
 
   const handleBackToHome = () => {
@@ -213,107 +225,64 @@ document.cookie =
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F3EADF] px-5 py-8">
+    <main className="min-h-screen bg-[#F7FAF3] px-5 py-10">
 
-      <div className="w-full max-w-[430px]">
+      {/* =========================
+          HEADER
+      ========================= */}
 
-        {/* =========================
-            CARD
-        ========================= */}
+      <div className="mx-auto mb-9 max-w-[450px] text-center">
 
-        <div className="rounded-[28px] border border-[#E8DED3] bg-white px-6 py-8 shadow-[0_12px_35px_rgba(92,72,55,0.08)] sm:px-8 sm:py-9">
+        {/* LOGO */}
 
-          {/* =========================
-              HEADER
-          ========================= */}
+        <div className="mx-auto mb-4 flex h-[64px] w-[64px] items-center justify-center rounded-[18px] bg-[#2A7C13] shadow-[0_6px_14px_rgba(42,124,19,0.18)]">
+          <span className="text-[30px]">
+            ♻
+          </span>
+        </div>
 
-          <div className="mb-8 text-center">
+        <h1 className="font-serif text-[30px] font-bold text-[#173F13]">
+          Bank Sampah
+        </h1>
 
-            {/* LOGO */}
+        <p className="mt-1 text-sm text-[#75806F]">
+          Panel Nasabah
+        </p>
+      </div>
 
-            <div className="mx-auto mb-4 flex h-[82px] w-[82px] items-center justify-center rounded-full bg-[#F1EEE8]">
+      {/* =========================
+          LOGIN CARD
+      ========================= */}
 
-              <svg
-                width="54"
-                height="54"
-                viewBox="0 0 64 64"
-                fill="none"
-              >
-                {/* daun kiri */}
-                <path
-                  d="M30 31C22 30 16 24 17 16C25 16 31 21 30 31Z"
-                  stroke="#7C9475"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+      <div className="mx-auto w-full max-w-[450px]">
 
-                {/* daun kanan */}
-                <path
-                  d="M34 31C35 21 42 15 50 16C50 25 43 31 34 31Z"
-                  stroke="#7C9475"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+        <div className="rounded-[22px] bg-white px-8 py-9 shadow-[0_12px_30px_rgba(42,124,19,0.10)]">
 
-                {/* batang */}
-                <path
-                  d="M32 52V27"
-                  stroke="#7C9475"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
+          {/* TITLE */}
 
-                {/* daun bawah kiri */}
-                <path
-                  d="M32 42C25 42 20 38 20 32C27 32 32 36 32 42Z"
-                  stroke="#7C9475"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+          <div className="mb-7">
+            <h2 className="font-serif text-[25px] font-bold text-[#173F13]">
+              Login Nasabah
+            </h2>
 
-                {/* daun bawah kanan */}
-                <path
-                  d="M33 42C40 42 45 38 45 32C38 32 33 36 33 42Z"
-                  stroke="#7C9475"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-
-            </div>
-
-            <h1 className="text-[20px] font-semibold tracking-wide text-[#4B4741]">
-              BANK SAMPAH
-            </h1>
-
-            <p className="mt-1 text-sm text-[#9A948C]">
-              Selamat datang kembali
+            <p className="mt-2 text-sm text-[#7C8478]">
+              Masuk untuk mengelola akun Bank Sampah Digital.
             </p>
-
           </div>
 
-          {/* =========================
-              FORM LOGIN
-          ========================= */}
+          {/* FORM */}
 
           <form
             onSubmit={handleLogin}
-            className="space-y-4"
+            className="space-y-5"
           >
 
-            {/* =========================
-                USERNAME
-            ========================= */}
+            {/* USERNAME */}
 
             <div>
-
               <label
                 htmlFor="username"
-                className="sr-only"
+                className="mb-2 block font-serif text-sm font-semibold text-[#284A24]"
               >
                 Username
               </label>
@@ -326,202 +295,166 @@ document.cookie =
                 onChange={(e) =>
                   setUsername(e.target.value)
                 }
-                placeholder="Username"
+                placeholder="Masukkan username"
                 autoComplete="username"
                 disabled={loading}
-                className="h-[46px] w-full rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] outline-none transition placeholder:text-[#AAA49C] focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F8F6F3]"
+                className="h-[50px] w-full rounded-[13px] border border-[#DCE5D7] bg-white px-4 text-sm text-[#40513B] outline-none transition placeholder:text-[#A2AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/15 disabled:bg-[#F5F6F3]"
               />
-
             </div>
 
-            {/* =========================
-                PASSWORD
-            ========================= */}
+            {/* PASSWORD */}
 
-            <div className="relative">
-
+            <div>
               <label
                 htmlFor="password"
-                className="sr-only"
+                className="mb-2 block font-serif text-sm font-semibold text-[#284A24]"
               >
                 Password
               </label>
 
-              <input
-                id="password"
-                name="password"
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                placeholder="Password"
-                autoComplete="current-password"
-                disabled={loading}
-                className="h-[46px] w-full rounded-[9px] border border-[#DED8D0] bg-white px-4 pr-11 text-sm text-[#514D47] outline-none transition placeholder:text-[#AAA49C] focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F8F6F3]"
-              />
+              <div className="relative">
 
-              {/* =========================
-                  SHOW PASSWORD
-              ========================= */}
+                <input
+                  id="password"
+                  name="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  placeholder="Masukkan password"
+                  autoComplete="current-password"
+                  disabled={loading}
+                  className="h-[50px] w-full rounded-[13px] border border-[#DCE5D7] bg-white px-4 pr-12 text-sm text-[#40513B] outline-none transition placeholder:text-[#A2AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/15 disabled:bg-[#F5F6F3]"
+                />
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword(
-                    (prev) => !prev
-                  )
-                }
-                disabled={loading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99928A] transition hover:text-[#6E675F] disabled:opacity-50"
-                aria-label={
-                  showPassword
-                    ? "Sembunyikan password"
-                    : "Tampilkan password"
-                }
-              >
-                {showPassword ? (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 3l18 18" />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (prev) => !prev
+                    )
+                  }
+                  disabled={loading}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7B8A76] hover:text-[#2A7C13]"
+                  aria-label={
+                    showPassword
+                      ? "Sembunyikan password"
+                      : "Tampilkan password"
+                  }
+                >
+                  {showPassword ? (
+                    <svg
+                      width="19"
+                      height="19"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 3l18 18" />
+                      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                      <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
+                      <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="19"
+                      height="19"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="2.7"
+                      />
+                    </svg>
+                  )}
+                </button>
 
-                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
-
-                    <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
-
-                    <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
-
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="2.7"
-                    />
-                  </svg>
-                )}
-              </button>
-
+              </div>
             </div>
 
-            {/* =========================
-                LUPA PASSWORD
-            ========================= */}
-
-            <div className="flex justify-end">
-
-              <Link
-                href="/forgot-password"
-                className="text-xs text-[#718867] transition hover:underline"
-              >
-                Lupa Password?
-              </Link>
-
-            </div>
-
-            {/* =========================
-                ERROR
-            ========================= */}
+            {/* ERROR */}
 
             {error && (
-              <div className="rounded-[9px] border border-[#E9CACA] bg-[#FFF7F7] px-3.5 py-2.5">
-                <p className="text-xs text-[#B76565]">
+              <div className="rounded-[11px] border border-[#E8C9C0] bg-[#FFF8F5] px-4 py-3">
+                <p className="text-xs text-[#A55F4C]">
                   {error}
                 </p>
               </div>
             )}
 
-            {/* =========================
-                SUCCESS
-            ========================= */}
+            {/* SUCCESS */}
 
             {success && (
-              <div className="rounded-[9px] border border-[#D3E0CE] bg-[#F5F9F3] px-3.5 py-2.5">
-                <p className="text-xs text-[#66805E]">
+              <div className="rounded-[11px] border border-[#B9D9AE] bg-[#F1F8ED] px-4 py-3">
+                <p className="text-xs text-[#2A7C13]">
                   {success}
                 </p>
               </div>
             )}
 
-            {/* =========================
-                LOGIN BUTTON
-            ========================= */}
+            {/* LOGIN BUTTON */}
 
             <button
               type="submit"
               disabled={loading}
-              className="h-[46px] w-full rounded-[9px] bg-[#777A76] text-sm font-medium text-white transition hover:bg-[#686B67] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-[51px] w-full rounded-[12px] bg-[#2A7C13] text-sm font-bold text-white shadow-[0_5px_10px_rgba(42,124,19,0.16)] transition hover:bg-[#236A10] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "MEMPROSES..."
-                : "LOGIN"}
+                : "Login Nasabah"}
             </button>
 
-            {/* =========================
-                REGISTER
-            ========================= */}
+            {/* REGISTER */}
 
-            <div className="pt-1 text-center">
+            <div className="border-t border-[#EDF0EA] pt-6 text-center">
 
-              <span className="text-xs text-[#969089]">
-                Belum punya akun?{" "}
-              </span>
+              <p className="text-sm text-[#7B8278]">
+                Belum punya akun?
+              </p>
 
               <Link
                 href="/nasabah-register"
-                className="text-xs font-medium text-[#718867] transition hover:underline"
+                className="mt-1 inline-block text-sm font-bold text-[#2A7C13] hover:underline"
               >
-                Daftar
+                Daftar Akun Nasabah
               </Link>
 
             </div>
 
           </form>
 
-          {/* =========================
-              BACK TO HOME
-          ========================= */}
+          {/* BACK */}
 
           <button
             type="button"
             onClick={handleBackToHome}
             disabled={loading}
-            className="mt-6 w-full text-center text-sm font-medium text-[#969089] transition hover:text-[#718867] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 w-full text-center text-sm text-[#7B8278] transition hover:text-[#2A7C13]"
           >
             ← Kembali ke halaman utama
           </button>
 
         </div>
 
-        {/* =========================
-            FOOTER
-        ========================= */}
+        {/* FOOTER */}
 
-        <p className="mt-5 text-center text-[11px] text-[#AAA39B]">
-          Bank Sampah
+        <p className="mt-6 text-center text-xs text-[#8B9486]">
+          Bank Sampah Digital Hub © 2026
         </p>
 
       </div>

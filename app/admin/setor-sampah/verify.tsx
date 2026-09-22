@@ -1093,11 +1093,7 @@ export default function VerifySetorSampah({
                     <option value="diverifikasi">
                       Diverifikasi
                     </option>
-
-                    <option value="dikonfirmasi">
-                      Dikonfirmasi
-                    </option>
-
+                    
                     <option value="ditolak">
                       Ditolak
                     </option>

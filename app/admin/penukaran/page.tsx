@@ -660,10 +660,6 @@ export default function AdminPenukaranPage() {
         selectedData.nasabah
           ?.telp || "-";
 
-      /* =================================================
-         BUAT PDF
-      ================================================= */
-
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -674,10 +670,6 @@ export default function AdminPenukaranPage() {
         pdf.internal.pageSize.getWidth();
 
       let y = 18;
-
-      /* =================================================
-         HEADER
-      ================================================= */
 
       pdf.setTextColor(
         23,
@@ -742,10 +734,6 @@ export default function AdminPenukaranPage() {
 
       y += 10;
 
-      /* =================================================
-         ROW HELPER
-      ================================================= */
-
       const row = (
         label: string,
         value: string,
@@ -794,10 +782,6 @@ export default function AdminPenukaranPage() {
 
         y += 7;
       };
-
-      /* =================================================
-         INFORMASI TRANSAKSI
-      ================================================= */
 
       pdf.setTextColor(
         64,
@@ -858,10 +842,6 @@ export default function AdminPenukaranPage() {
 
       y += 9;
 
-      /* =================================================
-         DATA NASABAH
-      ================================================= */
-
       pdf.setTextColor(
         64,
         60,
@@ -893,12 +873,6 @@ export default function AdminPenukaranPage() {
         "Telepon",
         telp
       );
-
-      /*
-       * Alamat bisa panjang.
-       * Kita buat wrap supaya tidak
-       * keluar dari halaman.
-       */
 
       pdf.setTextColor(
         130,
@@ -948,10 +922,6 @@ export default function AdminPenukaranPage() {
 
       y += 4;
 
-      /* =================================================
-         DETAIL PENUKARAN
-      ================================================= */
-
       pdf.setTextColor(
         64,
         60,
@@ -992,10 +962,6 @@ export default function AdminPenukaranPage() {
       );
 
       y += 5;
-
-      /* =================================================
-         BOX TOTAL
-      ================================================= */
 
       pdf.setFillColor(
         237,
@@ -1058,10 +1024,6 @@ export default function AdminPenukaranPage() {
       );
 
       y += 30;
-
-      /* =================================================
-         FOOTER
-      ================================================= */
 
       pdf.setDrawColor(
         190,
@@ -1143,10 +1105,6 @@ export default function AdminPenukaranPage() {
     }
   }
 
-  /* =====================================================
-     UPDATE STATUS
-  ===================================================== */
-
   async function handleUpdateStatus() {
     if (!selectedData) {
       return;
@@ -1173,17 +1131,6 @@ export default function AdminPenukaranPage() {
           "NEXT_PUBLIC_API_URL belum dikonfigurasi."
         );
       }
-
-      /*
-       * Swagger:
-       *
-       * PUT
-       * /api/v1/penukaran-poin/admin/status/{id}
-       *
-       * Status:
-       * - diproses
-       * - selesai
-       */
 
       const response = await fetch(
         `${baseUrl}/api/v1/penukaran-poin/admin/status/${selectedData.id}`,
@@ -1264,10 +1211,6 @@ export default function AdminPenukaranPage() {
     }
   }
 
-  /* =====================================================
-     LOADING
-  ===================================================== */
-
   if (loading) {
     return (
       <main className="min-h-screen bg-[#f7f4ee] px-5 py-7 md:px-8 lg:px-10">
@@ -1298,10 +1241,6 @@ export default function AdminPenukaranPage() {
       </main>
     );
   }
-
-  /* =====================================================
-     MAIN
-  ===================================================== */
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] px-5 py-7 text-[#403c36] md:px-8 lg:px-10">

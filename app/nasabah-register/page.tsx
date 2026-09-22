@@ -33,6 +33,10 @@ export default function NasabahRegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // =========================
+  // API CONFIG
+  // =========================
+
   const API_BASE_URL = (
     process.env.NEXT_PUBLIC_API_URL || ""
   ).replace(/\/+$/, "");
@@ -43,8 +47,11 @@ export default function NasabahRegisterPage() {
   // =========================
   // HANDLE CHANGE
   // =========================
+
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -61,10 +68,12 @@ export default function NasabahRegisterPage() {
   // =========================
   // HANDLE FOTO
   // =========================
+
   const handleFotoChange = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
-    const file = e.target.files?.[0] || null;
+    const file =
+      e.target.files?.[0] || null;
 
     if (!file) {
       setFoto(null);
@@ -87,7 +96,8 @@ export default function NasabahRegisterPage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize =
+      5 * 1024 * 1024;
 
     if (file.size > maxSize) {
       setError(
@@ -106,6 +116,7 @@ export default function NasabahRegisterPage() {
   // =========================
   // HANDLE REGISTER
   // =========================
+
   const handleRegister = async (
     e: FormEvent<HTMLFormElement>
   ) => {
@@ -113,6 +124,10 @@ export default function NasabahRegisterPage() {
 
     setError("");
     setSuccess("");
+
+    // =========================
+    // VALIDASI API
+    // =========================
 
     if (!API_BASE_URL) {
       setError(
@@ -128,28 +143,49 @@ export default function NasabahRegisterPage() {
       return;
     }
 
+    // =========================
+    // VALIDASI FORM
+    // =========================
+
     if (!form.namaNasabah.trim()) {
-      setError("Nama nasabah wajib diisi.");
+      setError(
+        "Nama nasabah wajib diisi."
+      );
       return;
     }
 
     if (!form.alamat.trim()) {
-      setError("Alamat wajib diisi.");
+      setError(
+        "Alamat wajib diisi."
+      );
       return;
     }
 
     if (!form.telp.trim()) {
-      setError("Nomor telepon wajib diisi.");
+      setError(
+        "Nomor telepon wajib diisi."
+      );
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(form.telp.trim())) {
+      setError(
+        "Nomor telepon hanya boleh berisi angka."
+      );
       return;
     }
 
     if (!form.username.trim()) {
-      setError("Username wajib diisi.");
+      setError(
+        "Username wajib diisi."
+      );
       return;
     }
 
     if (!form.password) {
-      setError("Password wajib diisi.");
+      setError(
+        "Password wajib diisi."
+      );
       return;
     }
 
@@ -187,35 +223,16 @@ export default function NasabahRegisterPage() {
     try {
       setLoading(true);
 
+      // =========================
+      // ENDPOINT
+      // =========================
+
       const endpoint =
         `${API_BASE_URL}/api/v1/auth/nasabah/register`;
 
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "REGISTER NASABAH"
-      );
-
-      console.log(
-        "Endpoint:",
-        endpoint
-      );
-
-      console.log(
-        "Has App Key:",
-        Boolean(APP_KEY)
-      );
-
-      console.log(
-        "Has Foto:",
-        Boolean(foto)
-      );
-
-      console.log(
-        "================================="
-      );
+      // =========================
+      // FORM DATA
+      // =========================
 
       const formData = new FormData();
 
@@ -251,6 +268,10 @@ export default function NasabahRegisterPage() {
         );
       }
 
+      // =========================
+      // REQUEST
+      // =========================
+
       const response = await fetch(
         endpoint,
         {
@@ -264,6 +285,10 @@ export default function NasabahRegisterPage() {
         }
       );
 
+      // =========================
+      // RESPONSE
+      // =========================
+
       const contentType =
         response.headers.get(
           "content-type"
@@ -276,7 +301,8 @@ export default function NasabahRegisterPage() {
           "application/json"
         )
       ) {
-        data = await response.json();
+        data =
+          await response.json();
       } else {
         const text =
           await response.text();
@@ -291,14 +317,9 @@ export default function NasabahRegisterPage() {
         );
       }
 
-      console.log(
-        "REGISTER RESPONSE:",
-        {
-          status:
-            response.status,
-          data,
-        }
-      );
+      // =========================
+      // ERROR RESPONSE
+      // =========================
 
       if (!response.ok) {
         let message =
@@ -307,9 +328,7 @@ export default function NasabahRegisterPage() {
           data?.data?.message ||
           `Registrasi gagal (${response.status}).`;
 
-        if (
-          Array.isArray(message)
-        ) {
+        if (Array.isArray(message)) {
           message =
             message.join(", ");
         }
@@ -325,10 +344,12 @@ export default function NasabahRegisterPage() {
             );
         }
 
-        throw new Error(
-          message
-        );
+        throw new Error(message);
       }
+
+      // =========================
+      // SUCCESS
+      // =========================
 
       setSuccess(
         data?.message ||
@@ -361,7 +382,6 @@ export default function NasabahRegisterPage() {
           "/nasabah-login"
         );
       }, 1500);
-
     } catch (err: any) {
       console.error(
         "REGISTER ERROR:",
@@ -378,434 +398,604 @@ export default function NasabahRegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F3EADF] flex items-center justify-center px-5 py-8">
-      <div className="w-full max-w-[430px]">
+    <main className="min-h-screen bg-[#F7FAF3]">
 
-        {/* CARD */}
-        <div className="bg-white rounded-[28px] border border-[#E8DED3] shadow-[0_12px_35px_rgba(92,72,55,0.08)] px-6 py-7 sm:px-8 sm:py-8">
+      <div className="min-h-screen lg:grid lg:grid-cols-[40%_60%]">
 
-          {/* HEADER */}
-          <div className="text-center mb-7">
+        {/* =====================================================
+            LEFT SIDE
+        ====================================================== */}
 
-            {/* BACK BUTTON */}
-            <div className="flex justify-start mb-3">
-              <button
-                type="button"
-                onClick={() =>
-                  router.back()
-                }
-                className="w-9 h-9 rounded-full flex items-center justify-center text-[#77736D] hover:bg-[#F7F1EA] transition"
-                aria-label="Kembali"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 12H5" />
-                  <path d="M12 19l-7-7 7-7" />
-                </svg>
-              </button>
+        <section className="relative hidden overflow-hidden bg-[#EAF4E5] px-8 py-8 lg:flex lg:flex-col">
+
+          {/* DECORATION */}
+
+          <div className="absolute -right-16 -top-16 h-[190px] w-[190px] rounded-full bg-[#D8E9D0]" />
+
+          <div className="absolute -bottom-16 -right-8 h-[170px] w-[170px] rounded-full bg-[#D8E9D0]" />
+
+          {/* BACK */}
+
+          <button
+            type="button"
+            onClick={() =>
+              router.back()
+            }
+            className="relative z-10 flex w-fit items-center gap-2 text-sm text-[#53724C] transition hover:text-[#2A7C13]"
+          >
+            <span className="text-lg">
+              ←
+            </span>
+
+            Kembali
+          </button>
+
+          {/* BRAND */}
+
+          <div className="relative z-10 mt-9 flex items-center gap-3">
+
+            <div className="flex h-[46px] w-[46px] items-center justify-center rounded-[14px] bg-[#2A7C13] text-[22px] text-white shadow-[0_5px_10px_rgba(42,124,19,0.15)]">
+              ♻
             </div>
 
-            {/* AVATAR */}
-            <div className="mx-auto mb-4 w-[76px] h-[76px] rounded-full bg-[#E9E4DE] flex items-center justify-center">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  cx="12"
-                  cy="8"
-                  r="3.5"
-                  fill="#A7A29B"
-                />
+            <div>
+              <h2 className="font-serif text-[22px] font-bold text-[#173F13]">
+                Bank Sampah
+              </h2>
 
-                <path
-                  d="M5.5 19.5C6.1 15.8 8.3 14 12 14C15.7 14 17.9 15.8 18.5 19.5"
-                  fill="#A7A29B"
-                />
-              </svg>
+              <p className="text-xs text-[#657360]">
+                Panel Nasabah
+              </p>
             </div>
 
-            <h1 className="text-[22px] font-semibold text-[#4B4741]">
-              Daftar Akun
-            </h1>
-
-            <p className="mt-1 text-sm text-[#9A948C]">
-              Buat akun untuk mulai menggunakan Bank Sampah
-            </p>
           </div>
 
-          {/* FORM */}
-          <form
-            onSubmit={handleRegister}
-            className="space-y-3.5"
-          >
+          {/* MAIN CONTENT */}
 
-            {/* NAMA NASABAH */}
-            <div>
-              <label
-                htmlFor="namaNasabah"
-                className="sr-only"
-              >
-                Nama Nasabah
-              </label>
+          <div className="relative z-10 mt-20 max-w-[430px]">
 
-              <input
-                id="namaNasabah"
-                name="namaNasabah"
-                type="text"
-                value={form.namaNasabah}
-                onChange={handleChange}
-                placeholder="Nama Nasabah"
-                autoComplete="name"
-                disabled={loading}
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
-              />
-            </div>
+            <span className="inline-block rounded-full bg-white px-4 py-2 text-xs font-medium text-[#53724C]">
+              Nasabah Bank Sampah
+            </span>
 
-            {/* ALAMAT */}
-            <div>
-              <label
-                htmlFor="alamat"
-                className="sr-only"
-              >
-                Alamat
-              </label>
+            <h1 className="mt-5 font-serif text-[38px] font-bold leading-[1.12] text-[#173F13]">
+              Kelola sampah
+              <br />
+              dengan lebih
+              <br />
+              sederhana.
+            </h1>
 
-              <textarea
-                id="alamat"
-                name="alamat"
-                value={form.alamat}
-                onChange={handleChange}
-                placeholder="Alamat Tinggal"
-                rows={3}
-                disabled={loading}
-                className="w-full min-h-[75px] rounded-[9px] border border-[#DED8D0] bg-white px-4 py-3 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none resize-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
-              />
-            </div>
+            <p className="mt-5 max-w-[420px] text-sm leading-6 text-[#657360]">
+              Buat akun nasabah dan mulai
+              mencatat penyetoran sampah,
+              mengumpulkan poin, serta
+              menukarkan hadiah dalam satu
+              tempat.
+            </p>
 
-            {/* TELEPON */}
-            <div>
-              <label
-                htmlFor="telp"
-                className="sr-only"
-              >
-                No. Telepon
-              </label>
+            {/* FEATURES */}
 
-              <input
-                id="telp"
-                name="telp"
-                type="tel"
-                value={form.telp}
-                onChange={handleChange}
-                placeholder="No. Telepon"
-                autoComplete="tel"
-                inputMode="tel"
-                disabled={loading}
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
-              />
-            </div>
+            <div className="mt-6 space-y-3">
 
-            {/* USERNAME */}
-            <div>
-              <label
-                htmlFor="username"
-                className="sr-only"
-              >
-                Username
-              </label>
-
-              <input
-                id="username"
-                name="username"
-                type="text"
-                value={form.username}
-                onChange={handleChange}
-                placeholder="Username"
-                autoComplete="username"
-                disabled={loading}
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* PASSWORD */}
-            <div className="relative">
-              <label
-                htmlFor="password"
-                className="sr-only"
-              >
-                Password
-              </label>
-
-              <input
-                id="password"
-                name="password"
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Password"
-                autoComplete="new-password"
-                disabled={loading}
-                className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 pr-11 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword(
-                    (prev) => !prev
-                  )
-                }
-                disabled={loading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99928A] hover:text-[#6E675F] transition"
-              >
-                {showPassword ? (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 3l18 18" />
-                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
-                    <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
-                    <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="2.7"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-
-            {/* KONFIRMASI PASSWORD */}
-            <div className="relative">
-              <label
-                htmlFor="konfirmasiPassword"
-                className="sr-only"
-              >
-                Konfirmasi Password
-              </label>
-
-              <input
-                id="konfirmasiPassword"
-                name="konfirmasiPassword"
-                type={
-                  showConfirmPassword
-                    ? "text"
-                    : "password"
-                }
-                value={
-                  form.konfirmasiPassword
-                }
-                onChange={handleChange}
-                placeholder="Konfirmasi Password"
-                autoComplete="new-password"
-                disabled={loading}
-                className={`w-full h-[45px] rounded-[9px] border bg-white px-4 pr-11 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition ${
-                  form.konfirmasiPassword &&
-                  form.password !==
-                    form.konfirmasiPassword
-                    ? "border-[#D69A9A]"
-                    : "border-[#DED8D0] focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10"
-                }`}
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowConfirmPassword(
-                    (prev) => !prev
-                  )
-                }
-                disabled={loading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#99928A] hover:text-[#6E675F] transition"
-              >
-                {showConfirmPassword ? (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 3l18 18" />
-                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
-                    <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
-                    <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="2.7"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-
-            {/* PASSWORD MATCH */}
-            {form.konfirmasiPassword &&
-              form.password !==
-                form.konfirmasiPassword && (
-                <p className="text-xs text-[#C47777] px-1">
-                  Password dan konfirmasi
-                  password tidak sama.
-                </p>
-              )}
-
-            {/* FOTO */}
-            <div>
-              <label
-                htmlFor="foto"
-                className="block text-xs text-[#858078] mb-1.5"
-              >
-                Foto Profil{" "}
-                <span className="text-[#AAA49C]">
-                  (opsional)
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-sm text-[#2A7C13]">
+                  ✓
                 </span>
-              </label>
 
-              <input
-                id="foto"
-                name="foto"
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={handleFotoChange}
-                disabled={loading}
-                className="w-full text-xs text-[#77736D] file:mr-3 file:rounded-[8px] file:border-0 file:bg-[#EEE8E1] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#6F675F] hover:file:bg-[#E5DED6] disabled:opacity-60"
-              />
+                <span className="text-sm text-[#4F654A]">
+                  Catat penyetoran sampah
+                </span>
+              </div>
 
-              {foto && (
-                <p className="mt-1.5 text-[11px] text-[#8A837B] truncate">
-                  File dipilih:{" "}
-                  {foto.name}
-                </p>
-              )}
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-sm text-[#2A7C13]">
+                  ✓
+                </span>
+
+                <span className="text-sm text-[#4F654A]">
+                  Kumpulkan poin
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-sm text-[#2A7C13]">
+                  ✓
+                </span>
+
+                <span className="text-sm text-[#4F654A]">
+                  Tukarkan poin dengan hadiah
+                </span>
+              </div>
+
             </div>
 
-            {/* TERMS */}
-            <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={setuju}
-                onChange={(e) =>
-                  setSetuju(
-                    e.target.checked
-                  )
-                }
-                disabled={loading}
-                className="mt-[2px] h-4 w-4 shrink-0 accent-[#8A9B82] cursor-pointer"
-              />
+          </div>
 
-              <span className="text-[12px] leading-5 text-[#858078]">
-                Saya setuju dengan{" "}
-                <button
-                  type="button"
-                  className="text-[#7D9274] font-medium hover:underline"
-                >
-                  Syarat & Ketentuan
-                </button>
-              </span>
-            </label>
+        </section>
 
-            {/* ERROR */}
-            {error && (
-              <div className="rounded-[9px] border border-[#E9CACA] bg-[#FFF7F7] px-3.5 py-2.5">
-                <p className="text-xs text-[#B76565]">
-                  {error}
-                </p>
-              </div>
-            )}
+        {/* =====================================================
+            RIGHT SIDE
+        ====================================================== */}
 
-            {/* SUCCESS */}
-            {success && (
-              <div className="rounded-[9px] border border-[#D3E0CE] bg-[#F5F9F3] px-3.5 py-2.5">
-                <p className="text-xs text-[#66805E]">
-                  {success}
-                </p>
-              </div>
-            )}
+        <section className="flex min-h-screen items-center justify-center bg-[#FFFDF8] px-6 py-10 sm:px-10 lg:px-12 xl:px-16">
 
-            {/* DAFTAR */}
+          <div className="w-full max-w-[600px]">
+
+            {/* MOBILE BACK */}
+
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-[45px] rounded-[9px] bg-[#777A76] hover:bg-[#686B67] active:scale-[0.99] text-white text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={() =>
+                router.back()
+              }
+              className="mb-7 flex items-center gap-2 text-sm text-[#53724C] lg:hidden"
             >
-              {loading
-                ? "MEMPROSES..."
-                : "DAFTAR"}
+              <span className="text-lg">
+                ←
+              </span>
+
+              Kembali
             </button>
 
-            {/* LOGIN */}
-            <div className="text-center pt-1">
-              <span className="text-xs text-[#969089]">
-                Sudah punya akun?{" "}
-              </span>
+            {/* HEADER */}
 
-              <Link
-                href="/nasabah-login"
-                className="text-xs font-medium text-[#718867] hover:underline"
-              >
-                Login
-              </Link>
+            <div className="mb-7">
+
+              <p className="font-serif text-xs font-semibold uppercase tracking-[0.18em] text-[#6B8661]">
+                Daftar Nasabah
+              </p>
+
+              <h1 className="mt-2 font-serif text-[32px] font-bold leading-tight text-[#173F13] sm:text-[36px]">
+                Daftar Akun Nasabah
+              </h1>
+
+              <p className="mt-2 max-w-[520px] text-sm leading-6 text-[#7B8278]">
+                Lengkapi data berikut untuk
+                membuat akun nasabah Bank
+                Sampah.
+              </p>
+
             </div>
-          </form>
-        </div>
 
-        {/* FOOTER */}
-        <p className="text-center text-[11px] text-[#AAA39B] mt-5">
-          Bank Sampah
-        </p>
+            {/* FORM */}
+
+            <form
+              onSubmit={handleRegister}
+              className="space-y-4"
+            >
+
+              {/* NAMA NASABAH */}
+
+              <div>
+                <label
+                  htmlFor="namaNasabah"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Nama Nasabah
+                </label>
+
+                <input
+                  id="namaNasabah"
+                  name="namaNasabah"
+                  type="text"
+                  value={
+                    form.namaNasabah
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  placeholder="Masukkan nama lengkap"
+                  autoComplete="name"
+                  disabled={loading}
+                  className="h-[47px] w-full rounded-[11px] border border-[#E0E6DB] bg-white px-4 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 disabled:bg-[#F5F6F3]"
+                />
+              </div>
+
+              {/* ALAMAT */}
+
+              <div>
+                <label
+                  htmlFor="alamat"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Alamat
+                </label>
+
+                <textarea
+                  id="alamat"
+                  name="alamat"
+                  value={
+                    form.alamat
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  placeholder="Masukkan alamat tinggal"
+                  rows={2}
+                  disabled={loading}
+                  className="min-h-[70px] w-full resize-none rounded-[11px] border border-[#E0E6DB] bg-white px-4 py-2.5 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 disabled:bg-[#F5F6F3]"
+                />
+              </div>
+
+              {/* TELEPON */}
+
+              <div>
+                <label
+                  htmlFor="telp"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  No. Telepon
+                </label>
+
+                <input
+                  id="telp"
+                  name="telp"
+                  type="tel"
+                  value={
+                    form.telp
+                  }
+                  onChange={(e) => {
+                    const value =
+                      e.target.value.replace(
+                        /\D/g,
+                        ""
+                      );
+
+                    setForm(
+                      (prev) => ({
+                        ...prev,
+                        telp: value,
+                      })
+                    );
+
+                    if (error) {
+                      setError("");
+                    }
+                  }}
+                  placeholder="Contoh: 081234567890"
+                  autoComplete="tel"
+                  inputMode="numeric"
+                  disabled={loading}
+                  className="h-[47px] w-full rounded-[11px] border border-[#E0E6DB] bg-white px-4 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 disabled:bg-[#F5F6F3]"
+                />
+              </div>
+
+              {/* USERNAME */}
+
+              <div>
+                <label
+                  htmlFor="username"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Username
+                </label>
+
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value={
+                    form.username
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  placeholder="Masukkan username"
+                  autoComplete="username"
+                  disabled={loading}
+                  className="h-[47px] w-full rounded-[11px] border border-[#E0E6DB] bg-white px-4 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 disabled:bg-[#F5F6F3]"
+                />
+              </div>
+
+              {/* PASSWORD */}
+
+              <div>
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Password
+                </label>
+
+                <div className="relative">
+
+                  <input
+                    id="password"
+                    name="password"
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    value={
+                      form.password
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    placeholder="Minimal 6 karakter"
+                    autoComplete="new-password"
+                    disabled={loading}
+                    className="h-[47px] w-full rounded-[11px] border border-[#E0E6DB] bg-white px-4 pr-12 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:border-[#76C457] focus:ring-2 focus:ring-[#76C457]/10 disabled:bg-[#F5F6F3]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        (prev) =>
+                          !prev
+                      )
+                    }
+                    disabled={loading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#899586] hover:text-[#2A7C13]"
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
+                  >
+                    {showPassword ? (
+                      <svg
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
+                        <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="2.7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                </div>
+              </div>
+
+              {/* KONFIRMASI PASSWORD */}
+
+              <div>
+                <label
+                  htmlFor="konfirmasiPassword"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Konfirmasi Password
+                </label>
+
+                <div className="relative">
+
+                  <input
+                    id="konfirmasiPassword"
+                    name="konfirmasiPassword"
+                    type={
+                      showConfirmPassword
+                        ? "text"
+                        : "password"
+                    }
+                    value={
+                      form.konfirmasiPassword
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    placeholder="Masukkan ulang password"
+                    autoComplete="new-password"
+                    disabled={loading}
+                    className={`h-[47px] w-full rounded-[11px] border bg-white px-4 pr-12 text-sm text-[#40513B] outline-none transition placeholder:text-[#A4AAA0] focus:ring-2 focus:ring-[#76C457]/10 ${
+                      form.konfirmasiPassword &&
+                      form.password !==
+                        form.konfirmasiPassword
+                        ? "border-[#D89A8A]"
+                        : "border-[#E0E6DB] focus:border-[#76C457]"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowConfirmPassword(
+                        (prev) =>
+                          !prev
+                      )
+                    }
+                    disabled={loading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#899586] hover:text-[#2A7C13]"
+                    aria-label={
+                      showConfirmPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <svg
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 4.3A10.8 10.8 0 0 1 12 4c5 0 8.7 4 10 8-0.5 1.5-1.4 2.9-2.5 4" />
+                        <path d="M6.2 6.2C4.5 7.4 3.3 9.2 2 12c1.3 3.8 5 8 10 8 1.5 0 2.8-.4 4-.9" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="19"
+                        height="19"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="2.7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                </div>
+
+                {form.konfirmasiPassword &&
+                  form.password !==
+                    form.konfirmasiPassword && (
+                    <p className="mt-1.5 text-xs text-[#B66A58]">
+                      Password dan konfirmasi
+                      password tidak sama.
+                    </p>
+                  )}
+              </div>
+
+              {/* FOTO */}
+
+              <div>
+                <label
+                  htmlFor="foto"
+                  className="mb-1.5 block text-sm font-medium text-[#345230]"
+                >
+                  Foto Profil{" "}
+                  <span className="font-normal text-[#969E91]">
+                    (opsional)
+                  </span>
+                </label>
+
+                <input
+                  id="foto"
+                  name="foto"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={
+                    handleFotoChange
+                  }
+                  disabled={loading}
+                  className="w-full text-xs text-[#687265] file:mr-3 file:rounded-[8px] file:border-0 file:bg-[#EAF4E5] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#3F6637] hover:file:bg-[#DDEED6] disabled:opacity-60"
+                />
+
+                {foto && (
+                  <p className="mt-1.5 truncate text-[11px] text-[#7B8476]">
+                    File dipilih:{" "}
+                    {foto.name}
+                  </p>
+                )}
+              </div>
+
+              {/* TERMS */}
+
+              <label className="flex cursor-pointer items-start gap-2.5 pt-1">
+
+                <input
+                  type="checkbox"
+                  checked={setuju}
+                  onChange={(e) =>
+                    setSetuju(
+                      e.target.checked
+                    )
+                  }
+                  disabled={loading}
+                  className="mt-[2px] h-4 w-4 shrink-0 accent-[#2A7C13]"
+                />
+
+                <span className="text-xs leading-5 text-[#727A70]">
+                  Saya menyetujui{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-[#2A7C13] hover:underline"
+                  >
+                    Syarat & Ketentuan
+                  </button>{" "}
+                  yang berlaku.
+                </span>
+
+              </label>
+
+              {/* ERROR */}
+
+              {error && (
+                <div className="rounded-[10px] border border-[#E8C9C0] bg-[#FFF8F5] px-3.5 py-2.5">
+                  <p className="text-xs text-[#A55F4C]">
+                    {error}
+                  </p>
+                </div>
+              )}
+
+              {/* SUCCESS */}
+
+              {success && (
+                <div className="rounded-[10px] border border-[#B9D9AE] bg-[#F1F8ED] px-3.5 py-2.5">
+                  <p className="text-xs text-[#2A7C13]">
+                    {success}
+                  </p>
+                </div>
+              )}
+
+              {/* DAFTAR */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="h-[49px] w-full rounded-[11px] bg-[#2A7C13] text-sm font-bold text-white shadow-[0_5px_10px_rgba(42,124,19,0.14)] transition hover:bg-[#236A10] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading
+                  ? "MEMPROSES..."
+                  : "DAFTAR"}
+              </button>
+
+              {/* LOGIN */}
+
+              <div className="border-t border-[#EDF0EA] pt-4 text-center">
+
+                <span className="text-xs text-[#7B8278]">
+                  Sudah punya akun?{" "}
+                </span>
+
+                <Link
+                  href="/nasabah-login"
+                  className="text-xs font-bold text-[#2A7C13] hover:underline"
+                >
+                  Login
+                </Link>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </section>
+
       </div>
     </main>
   );
