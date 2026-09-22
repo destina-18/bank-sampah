@@ -58,6 +58,48 @@ function getBaseUrl() {
   ).replace(/\/+$/, "");
 }
 
+/**
+ * Mengubah path foto dari API menjadi URL yang benar.
+ *
+ * Contoh:
+ * /uploads/img-123.jpg
+ * menjadi:
+ * https://backend-kamu.com/uploads/img-123.jpg
+ *
+ * Kalau API sudah memberikan URL lengkap:
+ * https://backend-kamu.com/uploads/img-123.jpg
+ * maka URL tersebut langsung digunakan.
+ */
+function getFotoUrl(foto?: string | null) {
+  if (!foto) return "";
+
+  const fotoTrimmed = foto.trim();
+
+  if (!fotoTrimmed) return "";
+
+  // Jika API sudah mengirim URL lengkap
+  if (
+    fotoTrimmed.startsWith("http://") ||
+    fotoTrimmed.startsWith("https://")
+  ) {
+    return fotoTrimmed;
+  }
+
+  const baseUrl = getBaseUrl();
+
+  if (!baseUrl) {
+    return fotoTrimmed;
+  }
+
+  // Jika path diawali "/"
+  if (fotoTrimmed.startsWith("/")) {
+    return `${baseUrl}${fotoTrimmed}`;
+  }
+
+  // Jika path tidak diawali "/"
+  return `${baseUrl}/${fotoTrimmed}`;
+}
+
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -182,11 +224,31 @@ export default function KategoriSampahPage() {
         throw new Error(message);
       }
 
-      setData(
-        Array.isArray(result.data)
-          ? result.data
-          : []
+      const kategoriData = Array.isArray(result.data)
+        ? result.data
+        : [];
+
+      console.log(
+        "DATA KATEGORI:",
+        kategoriData
       );
+
+      // Debug URL foto
+      kategoriData.forEach((item: KategoriSampah) => {
+        if (item.foto) {
+          console.log(
+            `Foto ${item.namaKategori}:`,
+            item.foto
+          );
+
+          console.log(
+            `URL foto ${item.namaKategori}:`,
+            getFotoUrl(item.foto)
+          );
+        }
+      });
+
+      setData(kategoriData);
     } catch (err) {
       console.error(
         "FETCH KATEGORI ERROR:",
@@ -431,6 +493,7 @@ export default function KategoriSampahPage() {
               )
             )}
           </div>
+
         ) : filteredData.length === 0 ? (
 
           /* EMPTY */
@@ -467,6 +530,9 @@ export default function KategoriSampahPage() {
               const style =
                 getJenisStyle(item.jenis);
 
+              const fotoUrl =
+                getFotoUrl(item.foto);
+
               return (
                 <article
                   key={item.id}
@@ -475,24 +541,62 @@ export default function KategoriSampahPage() {
 
                   {/* FOTO */}
                   <div className="relative h-48 overflow-hidden bg-[#EEF7EA]">
-                    {item.foto ? (
+                    {fotoUrl ? (
                       <img
-                        src={item.foto}
+                        src={fotoUrl}
                         alt={item.namaKategori}
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
                         onError={(e) => {
+                          console.error(
+                            "Gagal memuat foto kategori:",
+                            {
+                              namaKategori:
+                                item.namaKategori,
+                              foto:
+                                item.foto,
+                              fotoUrl:
+                                fotoUrl,
+                            }
+                          );
+
                           e.currentTarget.style.display =
                             "none";
+
+                          const fallback =
+                            e.currentTarget
+                              .nextElementSibling;
+
+                          if (
+                            fallback instanceof
+                            HTMLElement
+                          ) {
+                            fallback.style.display =
+                              "flex";
+                          }
                         }}
                       />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#EEF7EA] text-[#2A7C13]">
+                    ) : null}
+
+                    {/* FALLBACK FOTO */}
+                    <div
+                      className={`${
+                        fotoUrl
+                          ? "hidden"
+                          : "flex"
+                      } h-full w-full items-center justify-center bg-[#EEF7EA] text-[#2A7C13]`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2">
                         <Recycle
                           size={45}
                           strokeWidth={1.4}
                         />
+
+                        <span className="text-xs text-[#71806D]">
+                          Foto tidak tersedia
+                        </span>
                       </div>
-                    )}
+                    </div>
 
                     {/* BADGE */}
                     <div className="absolute left-4 top-4">

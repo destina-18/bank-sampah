@@ -17,12 +17,7 @@ import {
   Download,
   FileText,
 } from "lucide-react";
-
 import jsPDF from "jspdf";
-
-/* =========================================================
-   TYPES
-========================================================= */
 
 type Hadiah = {
   id: string;
@@ -84,13 +79,52 @@ function getBaseUrl() {
     process.env.NEXT_PUBLIC_BASE_API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     ""
-  ).replace(/\/$/, "");
+  ).replace(/\/+$/, "");
+}
+
+/*
+ * FIX FOTO HADIAH
+ *
+ * Jika API mengirim:
+ * /uploads/hadiah.jpg
+ *
+ * maka akan menjadi:
+ * https://backend-kamu.com/uploads/hadiah.jpg
+ *
+ * Jika API sudah mengirim:
+ * https://backend-kamu.com/uploads/hadiah.jpg
+ *
+ * maka URL tersebut langsung digunakan.
+ */
+function getFotoUrl(foto?: string | null) {
+  if (!foto) return "";
+
+  const fotoTrimmed = foto.trim();
+
+  if (!fotoTrimmed) return "";
+
+  if (
+    fotoTrimmed.startsWith("http://") ||
+    fotoTrimmed.startsWith("https://")
+  ) {
+    return fotoTrimmed;
+  }
+
+  const baseUrl = getBaseUrl();
+
+  if (!baseUrl) {
+    return fotoTrimmed;
+  }
+
+  if (fotoTrimmed.startsWith("/")) {
+    return `${baseUrl}${fotoTrimmed}`;
+  }
+
+  return `${baseUrl}/${fotoTrimmed}`;
 }
 
 function getToken() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+  if (typeof window === "undefined") return "";
 
   return (
     localStorage.getItem("token") ||
@@ -101,9 +135,7 @@ function getToken() {
 }
 
 function getAppKey() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+  if (typeof window === "undefined") return "";
 
   return (
     localStorage.getItem("appKey") ||
@@ -142,7 +174,7 @@ async function readJson(response: Response) {
 }
 
 /* =========================================================
-   FORMATTER
+   FORMAT
 ========================================================= */
 
 function formatNumber(value: number | undefined | null) {
@@ -152,9 +184,7 @@ function formatNumber(value: number | undefined | null) {
 }
 
 function formatDate(value?: string) {
-  if (!value) {
-    return "-";
-  }
+  if (!value) return "-";
 
   const date = new Date(value);
 
@@ -241,30 +271,26 @@ export default function TukarPoinPage() {
   const [summary, setSummary] =
     useState<DashboardSummary | null>(null);
 
-  const [loadingHadiah, setLoadingHadiah] = useState(true);
+  const [loadingHadiah, setLoadingHadiah] =
+    useState(true);
   const [loadingSummary, setLoadingSummary] =
     useState(true);
   const [loadingRiwayat, setLoadingRiwayat] =
     useState(true);
 
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [successMessage, setSuccessMessage] =
+    useState("");
+
   const [search, setSearch] = useState("");
 
   const [selectedHadiah, setSelectedHadiah] =
     useState<Hadiah | null>(null);
 
   const [showModal, setShowModal] = useState(false);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [successMessage, setSuccessMessage] =
-    useState("");
-
-  const [actionError, setActionError] = useState("");
-
-  /* =========================================================
-     NOTA
-  ========================================================= */
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
 
   const [selectedNota, setSelectedNota] =
     useState<Penukaran | null>(null);
@@ -333,13 +359,31 @@ export default function TukarPoinPage() {
         );
       }
 
-      setHadiah(
-        Array.isArray(result?.data)
-          ? result.data
-          : []
-      );
+      const data = Array.isArray(result?.data)
+        ? result.data
+        : [];
+
+      data.forEach((item: Hadiah) => {
+        if (item.foto) {
+          console.log(
+            "FOTO HADIAH:",
+            item.namaHadiah,
+            item.foto
+          );
+
+          console.log(
+            "URL FOTO HADIAH:",
+            getFotoUrl(item.foto)
+          );
+        }
+      });
+
+      setHadiah(data);
     } catch (err) {
-      console.error("FETCH HADIAH ERROR:", err);
+      console.error(
+        "FETCH HADIAH ERROR:",
+        err
+      );
 
       setError(
         err instanceof Error
@@ -513,7 +557,7 @@ export default function TukarPoinPage() {
   }, []);
 
   /* =========================================================
-     FILTER HADIAH
+     FILTER
   ========================================================= */
 
   const filteredHadiah = useMemo(() => {
@@ -532,32 +576,23 @@ export default function TukarPoinPage() {
     );
   }, [hadiah, search]);
 
-  /* =========================================================
-     SALDO
-  ========================================================= */
-
   const saldoPoin = Number(
     summary?.saldoPoin ?? 0
   );
 
   /* =========================================================
-     SELECT HADIAH
+     MODAL TUKAR
   ========================================================= */
 
-  function handleSelectHadiah(
-    item: Hadiah
-  ) {
+  function handleSelectHadiah(item: Hadiah) {
     setActionError("");
     setSuccessMessage("");
-
     setSelectedHadiah(item);
     setShowModal(true);
   }
 
   function closeModal() {
-    if (isSubmitting) {
-      return;
-    }
+    if (isSubmitting) return;
 
     setShowModal(false);
     setSelectedHadiah(null);
@@ -569,18 +604,14 @@ export default function TukarPoinPage() {
   ========================================================= */
 
   async function handleTukar() {
-    if (!selectedHadiah) {
-      return;
-    }
+    if (!selectedHadiah) return;
 
-    const hadiahTerpilih =
-      selectedHadiah;
+    const hadiahTerpilih = selectedHadiah;
 
     if (hadiahTerpilih.stok <= 0) {
       setActionError(
         "Hadiah ini sedang habis."
       );
-
       return;
     }
 
@@ -595,7 +626,6 @@ export default function TukarPoinPage() {
           saldoPoin
         )} poin.`
       );
-
       return;
     }
 
@@ -617,8 +647,7 @@ export default function TukarPoinPage() {
           method: "POST",
           headers: getHeaders(),
           body: JSON.stringify({
-            hadiahId:
-              hadiahTerpilih.id,
+            hadiahId: hadiahTerpilih.id,
           }),
         }
       );
@@ -653,8 +682,7 @@ export default function TukarPoinPage() {
 
       setSuccessMessage(
         `Penukaran berhasil diajukan. Kode transaksi: ${
-          result?.data?.kodePenukaran ||
-          "-"
+          result?.data?.kodePenukaran || "-"
         }`
       );
 
@@ -683,12 +711,10 @@ export default function TukarPoinPage() {
   }
 
   /* =========================================================
-     GET NOTA
+     NOTA
   ========================================================= */
 
-  async function fetchNota(
-    item: Penukaran
-  ) {
+  async function fetchNota(item: Penukaran) {
     try {
       setLoadingNota(true);
       setNotaError("");
@@ -764,14 +790,8 @@ export default function TukarPoinPage() {
     }
   }
 
-  /* =========================================================
-     CLOSE NOTA
-  ========================================================= */
-
   function closeNota() {
-    if (downloadingPdf) {
-      return;
-    }
+    if (downloadingPdf) return;
 
     setShowNotaModal(false);
     setSelectedNota(null);
@@ -784,9 +804,7 @@ export default function TukarPoinPage() {
   ========================================================= */
 
   async function downloadNotaPdf() {
-    if (!selectedNota) {
-      return;
-    }
+    if (!selectedNota) return;
 
     try {
       setDownloadingPdf(true);
@@ -834,7 +852,6 @@ export default function TukarPoinPage() {
         }
 
         data = result.data as NotaData;
-
         setNotaData(data);
       }
 
@@ -891,47 +908,31 @@ export default function TukarPoinPage() {
 
       let y = 18;
 
-      pdf.setFont(
-        "helvetica",
-        "bold"
-      );
-
+      pdf.setFont("helvetica", "bold");
       pdf.setFontSize(18);
 
       pdf.text(
         "BANK SAMPAH",
         pageWidth / 2,
         y,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       y += 7;
 
       pdf.setFontSize(10);
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
+      pdf.setFont("helvetica", "normal");
 
       pdf.text(
         "Bukti Transaksi Penukaran Poin",
         pageWidth / 2,
         y,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       y += 7;
 
-      pdf.setDrawColor(
-        180,
-        180,
-        180
-      );
+      pdf.setDrawColor(180, 180, 180);
 
       pdf.line(
         15,
@@ -971,9 +972,7 @@ export default function TukarPoinPage() {
           value,
           pageWidth - 15,
           y,
-          {
-            align: "right",
-          }
+          { align: "right" }
         );
 
         y += 7;
@@ -992,12 +991,7 @@ export default function TukarPoinPage() {
 
       y += 2;
 
-      pdf.setDrawColor(
-        200,
-        200,
-        200
-      );
-
+      pdf.setDrawColor(200, 200, 200);
       pdf.setLineDashPattern(
         [2, 2],
         0
@@ -1112,9 +1106,7 @@ export default function TukarPoinPage() {
         "TOTAL POIN DIGUNAKAN",
         pageWidth / 2,
         y + 7,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       pdf.setFont(
@@ -1128,9 +1120,7 @@ export default function TukarPoinPage() {
         `${formatNumber(poin)} POIN`,
         pageWidth / 2,
         y + 14,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       y += 28;
@@ -1161,9 +1151,7 @@ export default function TukarPoinPage() {
         "Terima kasih telah menggunakan",
         pageWidth / 2,
         y,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       y += 4;
@@ -1172,9 +1160,7 @@ export default function TukarPoinPage() {
         "layanan Bank Sampah.",
         pageWidth / 2,
         y,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       y += 8;
@@ -1191,9 +1177,7 @@ export default function TukarPoinPage() {
         "Nota ini dibuat secara digital.",
         pageWidth / 2,
         y,
-        {
-          align: "center",
-        }
+        { align: "center" }
       );
 
       pdf.save(
@@ -1224,35 +1208,29 @@ export default function TukarPoinPage() {
       <div className="mx-auto max-w-7xl">
 
         {/* HEADER */}
-
         <div className="mb-7">
           <div className="mb-2 flex items-center gap-2 text-sm text-[#8b8277]">
             <Gift size={16} />
-
             <span>Nasabah</span>
-
             <span>/</span>
-
             <span>Tukar Poin</span>
           </div>
 
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#2A7C13] md:text-3xl">
-              Tukar Poin
-            </h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2A7C13] md:text-3xl">
+            Tukar Poin
+          </h1>
 
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#71806D]">
-              Gunakan poin yang kamu kumpulkan
-              untuk mendapatkan hadiah atau
-              voucher yang tersedia.
-            </p>
-          </div>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-[#71806D]">
+            Gunakan poin yang kamu kumpulkan
+            untuk mendapatkan hadiah atau
+            voucher yang tersedia.
+          </p>
         </div>
 
         {/* SALDO */}
-
         <section className="mb-7 overflow-hidden rounded-2xl border border-[#dce6d8] bg-[#edf4ea]">
           <div className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
+
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#dbe9d6] text-[#56744e]">
                 <Coins
@@ -1270,9 +1248,7 @@ export default function TukarPoinPage() {
                   <div className="mt-2 h-8 w-28 animate-pulse rounded-lg bg-[#dce7d8]" />
                 ) : (
                   <p className="mt-0.5 text-2xl font-semibold tracking-tight text-[#405a3b]">
-                    {formatNumber(
-                      saldoPoin
-                    )}{" "}
+                    {formatNumber(saldoPoin)}{" "}
                     <span className="text-sm font-medium">
                       poin
                     </span>
@@ -1288,17 +1264,16 @@ export default function TukarPoinPage() {
 
               <p className="mt-0.5 text-sm font-semibold text-[#53674e]">
                 {formatNumber(
-                  summary?.totalPenukaranHadiah ??
-                    0
+                  summary?.totalPenukaranHadiah ?? 0
                 )}{" "}
                 transaksi
               </p>
             </div>
+
           </div>
         </section>
 
         {/* SUCCESS */}
-
         {successMessage && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#cfe0cb] bg-[#edf6eb] p-4 text-sm text-[#52744b]">
             <CheckCircle2
@@ -1329,7 +1304,6 @@ export default function TukarPoinPage() {
         )}
 
         {/* ERROR */}
-
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#e7c9c2] bg-[#fbefec] p-4 text-sm text-[#a15e55]">
             <AlertCircle
@@ -1358,7 +1332,6 @@ export default function TukarPoinPage() {
         )}
 
         {/* ACTION ERROR */}
-
         {actionError && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-[#eadfcb] bg-[#fffaf0] p-4 text-sm text-[#75633d]">
             <AlertCircle
@@ -1387,8 +1360,7 @@ export default function TukarPoinPage() {
           </div>
         )}
 
-        {/* RIWAYAT PENUKARAN */}
-
+        {/* RIWAYAT */}
         <section className="mb-7 rounded-2xl border border-[#DDE8D8] bg-white shadow-[0_5px_22px_rgba(42,124,19,0.04)]">
           <div className="border-b border-[#eee8df] px-5 py-4">
             <div className="flex items-center gap-3">
@@ -1411,14 +1383,14 @@ export default function TukarPoinPage() {
 
           {loadingRiwayat ? (
             <div className="space-y-3 p-5">
-              {Array.from({
-                length: 3,
-              }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-20 animate-pulse rounded-xl bg-[#f0ece5]"
-                />
-              ))}
+              {Array.from({ length: 3 }).map(
+                (_, index) => (
+                  <div
+                    key={index}
+                    className="h-20 animate-pulse rounded-xl bg-[#f0ece5]"
+                  />
+                )
+              )}
             </div>
           ) : riwayat.length === 0 ? (
             <div className="px-5 py-10 text-center">
@@ -1440,9 +1412,7 @@ export default function TukarPoinPage() {
             <div className="divide-y divide-[#eee8df]">
               {riwayat.map((item) => {
                 const status =
-                  getStatusStyle(
-                    item.status
-                  );
+                  getStatusStyle(item.status);
 
                 const StatusIcon =
                   status.icon;
@@ -1460,8 +1430,7 @@ export default function TukarPoinPage() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[#4c4740]">
                           {item.hadiah
-                            ?.namaHadiah ||
-                            "-"}
+                            ?.namaHadiah || "-"}
                         </p>
 
                         <p className="mt-1 text-xs text-[#958c82]">
@@ -1500,10 +1469,7 @@ export default function TukarPoinPage() {
                         }
                         className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[#dcd6cd] bg-white px-3 text-xs font-medium text-[#5f695c] transition hover:bg-[#f3f0ea]"
                       >
-                        <FileText
-                          size={14}
-                        />
-
+                        <FileText size={14} />
                         Nota
                       </button>
                     </div>
@@ -1513,8 +1479,8 @@ export default function TukarPoinPage() {
             </div>
           )}
         </section>
-                {/* SEARCH */}
 
+        {/* SEARCH */}
         <section className="mb-6">
           <div className="relative max-w-md">
             <Search
@@ -1526,9 +1492,7 @@ export default function TukarPoinPage() {
               type="text"
               value={search}
               onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
+                setSearch(e.target.value)
               }
               placeholder="Cari hadiah atau voucher..."
               className="h-11 w-full rounded-xl border border-[#e4ddd3] bg-[#fffdf9] pl-10 pr-4 text-sm text-[#403c36] outline-none transition placeholder:text-[#aaa196] focus:border-[#a8b69e] focus:bg-white"
@@ -1536,8 +1500,7 @@ export default function TukarPoinPage() {
           </div>
         </section>
 
-        {/* TITLE HADIAH */}
-
+        {/* TITLE */}
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-[#4a453e]">
@@ -1564,28 +1527,27 @@ export default function TukarPoinPage() {
           </button>
         </div>
 
-        {/* LOADING HADIAH */}
-
+        {/* HADIAH */}
         {loadingHadiah ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({
-              length: 6,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9]"
-              >
-                <div className="h-48 animate-pulse bg-[#eee9e1]" />
+            {Array.from({ length: 6 }).map(
+              (_, index) => (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9]"
+                >
+                  <div className="h-48 animate-pulse bg-[#eee9e1]" />
 
-                <div className="space-y-4 p-5">
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-[#eee9e1]" />
+                  <div className="space-y-4 p-5">
+                    <div className="h-5 w-3/4 animate-pulse rounded bg-[#eee9e1]" />
 
-                  <div className="h-4 w-1/2 animate-pulse rounded bg-[#eee9e1]" />
+                    <div className="h-4 w-1/2 animate-pulse rounded bg-[#eee9e1]" />
 
-                  <div className="h-11 animate-pulse rounded-xl bg-[#eee9e1]" />
+                    <div className="h-11 animate-pulse rounded-xl bg-[#eee9e1]" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         ) : filteredHadiah.length === 0 ? (
           <div className="rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] px-6 py-16 text-center">
@@ -1617,33 +1579,75 @@ export default function TukarPoinPage() {
               const bisaTukar =
                 cukupPoin && tersedia;
 
+              const fotoUrl =
+                getFotoUrl(item.foto);
+
               return (
                 <article
                   key={item.id}
                   className="group overflow-hidden rounded-2xl border border-[#e7dfd5] bg-[#fffdf9] shadow-[0_5px_22px_rgba(86,72,52,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(86,72,52,0.08)]"
                 >
+
+                  {/* FOTO HADIAH */}
                   <div className="relative h-48 overflow-hidden bg-[#eee9e1]">
-                    {item.foto ? (
+
+                    {fotoUrl ? (
                       <img
-                        src={item.foto}
-                        alt={
-                          item.namaHadiah
-                        }
+                        src={fotoUrl}
+                        alt={item.namaHadiah}
+                        loading="lazy"
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                         onError={(e) => {
+                          console.error(
+                            "Gagal memuat foto hadiah:",
+                            {
+                              namaHadiah:
+                                item.namaHadiah,
+                              foto:
+                                item.foto,
+                              fotoUrl,
+                            }
+                          );
+
                           e.currentTarget.style.display =
                             "none";
+
+                          const fallback =
+                            e.currentTarget
+                              .nextElementSibling;
+
+                          if (
+                            fallback instanceof
+                            HTMLElement
+                          ) {
+                            fallback.style.display =
+                              "flex";
+                          }
                         }}
                       />
-                    ) : (
-                      <div className="flex h-full items-center justify-center bg-[#edf2e9] text-[#73856d]">
+                    ) : null}
+
+                    {/* FALLBACK FOTO */}
+                    <div
+                      className={`${
+                        fotoUrl
+                          ? "hidden"
+                          : "flex"
+                      } h-full w-full items-center justify-center bg-[#edf2e9] text-[#73856d]`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2">
                         <Gift
                           size={48}
                           strokeWidth={1.4}
                         />
-                      </div>
-                    )}
 
+                        <span className="text-xs text-[#8c9787]">
+                          Foto tidak tersedia
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* STOK */}
                     <div className="absolute right-4 top-4">
                       <span
                         className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${
@@ -1659,6 +1663,7 @@ export default function TukarPoinPage() {
                     </div>
                   </div>
 
+                  {/* CONTENT */}
                   <div className="p-5">
                     <h3 className="text-base font-semibold text-[#4a453e]">
                       {item.namaHadiah}
@@ -1735,13 +1740,14 @@ export default function TukarPoinPage() {
       </div>
 
       {/* =====================================================
-          MODAL KONFIRMASI TUKAR
+          MODAL KONFIRMASI
       ===================================================== */}
 
       {showModal &&
         selectedHadiah && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#263329]/30 px-4 backdrop-blur-[2px]">
             <div className="w-full max-w-md rounded-2xl border border-[#e4ddd3] bg-[#fffdf9] p-6 shadow-[0_20px_60px_rgba(45,55,45,0.18)]">
+
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-[#403c36]">
@@ -1757,24 +1763,64 @@ export default function TukarPoinPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  disabled={
-                    isSubmitting
-                  }
+                  disabled={isSubmitting}
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8d857b] hover:bg-[#f2eee8] disabled:opacity-50"
                 >
                   <X size={17} />
                 </button>
               </div>
 
-              <div className="mt-5 rounded-xl border border-[#e6e0d7] bg-[#f7f4ee] p-4">
+              {/* FOTO HADIAH DI MODAL */}
+              <div className="mt-5 overflow-hidden rounded-xl border border-[#e6e0d7] bg-[#f7f4ee]">
+                {selectedHadiah.foto ? (
+                  <img
+                    src={getFotoUrl(
+                      selectedHadiah.foto
+                    )}
+                    alt={
+                      selectedHadiah.namaHadiah
+                    }
+                    className="h-40 w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display =
+                        "none";
+
+                      const fallback =
+                        e.currentTarget
+                          .nextElementSibling;
+
+                      if (
+                        fallback instanceof
+                        HTMLElement
+                      ) {
+                        fallback.style.display =
+                          "flex";
+                      }
+                    }}
+                  />
+                ) : null}
+
+                <div
+                  className={`${
+                    selectedHadiah.foto
+                      ? "hidden"
+                      : "flex"
+                  } h-40 w-full items-center justify-center bg-[#edf2e9] text-[#73856d]`}
+                >
+                  <Gift
+                    size={42}
+                    strokeWidth={1.4}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-[#e6e0d7] bg-[#f7f4ee] p-4">
                 <p className="text-xs text-[#8b8277]">
                   Hadiah
                 </p>
 
                 <p className="mt-1 text-sm font-semibold text-[#403c36]">
-                  {
-                    selectedHadiah.namaHadiah
-                  }
+                  {selectedHadiah.namaHadiah}
                 </p>
 
                 <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1815,9 +1861,7 @@ export default function TukarPoinPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  disabled={
-                    isSubmitting
-                  }
+                  disabled={isSubmitting}
                   className="flex-1 rounded-xl border border-[#e1dbd2] bg-white px-4 py-3 text-sm font-medium text-[#696157] hover:bg-[#f5f2ec] disabled:opacity-50"
                 >
                   Batal
@@ -1826,9 +1870,7 @@ export default function TukarPoinPage() {
                 <button
                   type="button"
                   onClick={handleTukar}
-                  disabled={
-                    isSubmitting
-                  }
+                  disabled={isSubmitting}
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#2e7d32] px-4 py-3 text-sm font-semibold text-white hover:bg-[#205c29] disabled:opacity-60"
                 >
                   {isSubmitting ? (
@@ -1837,7 +1879,6 @@ export default function TukarPoinPage() {
                         size={16}
                         className="animate-spin"
                       />
-
                       Memproses...
                     </>
                   ) : (
@@ -1848,7 +1889,8 @@ export default function TukarPoinPage() {
             </div>
           </div>
         )}
-              {/* =====================================================
+
+      {/* =====================================================
           MODAL NOTA
       ===================================================== */}
 
@@ -1857,7 +1899,6 @@ export default function TukarPoinPage() {
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-[#e4ddd3] bg-[#fffdf9] shadow-[0_20px_60px_rgba(45,55,45,0.18)]">
 
             {/* HEADER */}
-
             <div className="flex items-center justify-between border-b border-[#eee8df] px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f2e6] text-[#55764e]">
@@ -1879,9 +1920,7 @@ export default function TukarPoinPage() {
               <button
                 type="button"
                 onClick={closeNota}
-                disabled={
-                  downloadingPdf
-                }
+                disabled={downloadingPdf}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-[#81796e] hover:bg-[#f3f0ea] disabled:opacity-50"
               >
                 <X size={18} />
@@ -1889,7 +1928,6 @@ export default function TukarPoinPage() {
             </div>
 
             {/* BODY */}
-
             <div className="p-5">
               {loadingNota ? (
                 <div className="py-12 text-center">
@@ -1916,8 +1954,7 @@ export default function TukarPoinPage() {
 
                     <div>
                       <p className="text-sm font-semibold text-[#8f514a]">
-                        Nota tidak dapat
-                        dimuat
+                        Nota tidak dapat dimuat
                       </p>
 
                       <p className="mt-1 text-xs leading-5 text-[#a15e55]">
@@ -1929,9 +1966,7 @@ export default function TukarPoinPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (
-                        selectedNota
-                      ) {
+                      if (selectedNota) {
                         fetchNota(
                           selectedNota
                         );
@@ -1944,8 +1979,6 @@ export default function TukarPoinPage() {
                 </div>
               ) : notaData ? (
                 <>
-                  {/* NOTA PREVIEW */}
-
                   <div className="rounded-2xl border border-[#e3ddd4] bg-white p-5">
                     <div className="text-center">
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e8f2e6] text-[#4f7048]">
@@ -1964,21 +1997,15 @@ export default function TukarPoinPage() {
 
                     <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
 
-                    {/* KODE */}
-
                     <div className="rounded-xl bg-[#f5f2ec] p-4 text-center">
                       <p className="text-[10px] uppercase tracking-[0.12em] text-[#958c82]">
                         Kode Transaksi
                       </p>
 
                       <p className="mt-1 text-sm font-bold text-[#4b6247]">
-                        {
-                          notaData.kodePenukaran
-                        }
+                        {notaData.kodePenukaran}
                       </p>
                     </div>
-
-                    {/* DATA */}
 
                     <div className="mt-5 space-y-3">
                       <div className="flex items-start justify-between gap-4">
@@ -2000,8 +2027,7 @@ export default function TukarPoinPage() {
 
                         <span className="text-right text-xs font-semibold text-[#504a42]">
                           {notaData.nasabah
-                            ?.namaNasabah ||
-                            "-"}
+                            ?.namaNasabah || "-"}
                         </span>
                       </div>
 
@@ -2012,8 +2038,7 @@ export default function TukarPoinPage() {
 
                         <span className="text-right text-xs font-semibold text-[#504a42]">
                           {notaData.hadiah
-                            ?.namaHadiah ||
-                            "-"}
+                            ?.namaHadiah || "-"}
                         </span>
                       </div>
 
@@ -2063,8 +2088,6 @@ export default function TukarPoinPage() {
 
                     <div className="my-5 border-t border-dashed border-[#dcd5cc]" />
 
-                    {/* TOTAL */}
-
                     <div className="rounded-xl bg-[#edf4ea] p-4 text-center">
                       <p className="text-[10px] uppercase tracking-[0.1em] text-[#7f8d79]">
                         Total Poin Digunakan
@@ -2085,16 +2108,12 @@ export default function TukarPoinPage() {
                     </p>
                   </div>
 
-                  {/* DOWNLOAD */}
-
                   <button
                     type="button"
                     onClick={
                       downloadNotaPdf
                     }
-                    disabled={
-                      downloadingPdf
-                    }
+                    disabled={downloadingPdf}
                     className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2e7d32] text-sm font-semibold text-white transition hover:bg-[#205c29] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {downloadingPdf ? (
@@ -2103,15 +2122,11 @@ export default function TukarPoinPage() {
                           size={17}
                           className="animate-spin"
                         />
-
                         Membuat PDF...
                       </>
                     ) : (
                       <>
-                        <Download
-                          size={17}
-                        />
-
+                        <Download size={17} />
                         Download Nota PDF
                       </>
                     )}
