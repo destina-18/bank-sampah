@@ -21,7 +21,6 @@ export default function NasabahRegisterPage() {
   });
 
   const [foto, setFoto] = useState<File | null>(null);
-
   const [setuju, setSetuju] = useState(false);
 
   const [showPassword, setShowPassword] =
@@ -41,7 +40,9 @@ export default function NasabahRegisterPage() {
   const APP_KEY =
     process.env.NEXT_PUBLIC_APP_KEY || "";
 
-
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -57,6 +58,9 @@ export default function NasabahRegisterPage() {
     }
   };
 
+  // =========================
+  // HANDLE FOTO
+  // =========================
   const handleFotoChange = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
@@ -99,6 +103,9 @@ export default function NasabahRegisterPage() {
     setFoto(file);
   };
 
+  // =========================
+  // HANDLE REGISTER
+  // =========================
   const handleRegister = async (
     e: FormEvent<HTMLFormElement>
   ) => {
@@ -186,21 +193,26 @@ export default function NasabahRegisterPage() {
       console.log(
         "================================="
       );
+
       console.log(
         "REGISTER NASABAH"
       );
+
       console.log(
         "Endpoint:",
         endpoint
       );
+
       console.log(
         "Has App Key:",
         Boolean(APP_KEY)
       );
+
       console.log(
         "Has Foto:",
         Boolean(foto)
       );
+
       console.log(
         "================================="
       );
@@ -247,6 +259,7 @@ export default function NasabahRegisterPage() {
           headers: {
             "x-app-key": APP_KEY,
           },
+
           body: formData,
         }
       );
@@ -321,6 +334,7 @@ export default function NasabahRegisterPage() {
         data?.message ||
           "Registrasi nasabah berhasil. Mengarahkan ke halaman login..."
       );
+
       setForm({
         namaNasabah: "",
         alamat: "",
@@ -347,6 +361,7 @@ export default function NasabahRegisterPage() {
           "/nasabah-login"
         );
       }, 1500);
+
     } catch (err: any) {
       console.error(
         "REGISTER ERROR:",
@@ -438,23 +453,19 @@ export default function NasabahRegisterPage() {
             {/* NAMA NASABAH */}
             <div>
               <label
-                htmlFor="UserName"
+                htmlFor="namaNasabah"
                 className="sr-only"
               >
-                User Name
+                Nama Nasabah
               </label>
 
               <input
                 id="namaNasabah"
                 name="namaNasabah"
                 type="text"
-                value={
-                  form.namaNasabah
-                }
-                onChange={
-                  handleChange
-                }
-                placeholder="Username"
+                value={form.namaNasabah}
+                onChange={handleChange}
+                placeholder="Nama Nasabah"
                 autoComplete="name"
                 disabled={loading}
                 className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
@@ -473,12 +484,8 @@ export default function NasabahRegisterPage() {
               <textarea
                 id="alamat"
                 name="alamat"
-                value={
-                  form.alamat
-                }
-                onChange={
-                  handleChange
-                }
+                value={form.alamat}
+                onChange={handleChange}
                 placeholder="Alamat Tinggal"
                 rows={3}
                 disabled={loading}
@@ -499,12 +506,8 @@ export default function NasabahRegisterPage() {
                 id="telp"
                 name="telp"
                 type="tel"
-                value={
-                  form.telp
-                }
-                onChange={
-                  handleChange
-                }
+                value={form.telp}
+                onChange={handleChange}
                 placeholder="No. Telepon"
                 autoComplete="tel"
                 inputMode="tel"
@@ -516,24 +519,20 @@ export default function NasabahRegisterPage() {
             {/* USERNAME */}
             <div>
               <label
-                htmlFor="namalengkap"
+                htmlFor="username"
                 className="sr-only"
               >
-                Nama
+                Username
               </label>
 
               <input
-                id="namalengkap"
-                name="namalengkap"
+                id="username"
+                name="username"
                 type="text"
-                value={
-                  form.username
-                }
-                onChange={
-                  handleChange
-                }
-                placeholder="Nama Lengkap"
-                autoComplete="namalengkap"
+                value={form.username}
+                onChange={handleChange}
+                placeholder="Username"
+                autoComplete="username"
                 disabled={loading}
                 className="w-full h-[45px] rounded-[9px] border border-[#DED8D0] bg-white px-4 text-sm text-[#514D47] placeholder:text-[#AAA49C] outline-none transition focus:border-[#B99C84] focus:ring-2 focus:ring-[#B99C84]/10 disabled:bg-[#F7F5F2] disabled:cursor-not-allowed"
               />
@@ -556,12 +555,8 @@ export default function NasabahRegisterPage() {
                     ? "text"
                     : "password"
                 }
-                value={
-                  form.password
-                }
-                onChange={
-                  handleChange
-                }
+                value={form.password}
+                onChange={handleChange}
                 placeholder="Password"
                 autoComplete="new-password"
                 disabled={loading}
@@ -572,8 +567,7 @@ export default function NasabahRegisterPage() {
                 type="button"
                 onClick={() =>
                   setShowPassword(
-                    (prev) =>
-                      !prev
+                    (prev) => !prev
                   )
                 }
                 disabled={loading}
@@ -637,9 +631,7 @@ export default function NasabahRegisterPage() {
                 value={
                   form.konfirmasiPassword
                 }
-                onChange={
-                  handleChange
-                }
+                onChange={handleChange}
                 placeholder="Konfirmasi Password"
                 autoComplete="new-password"
                 disabled={loading}
@@ -656,8 +648,7 @@ export default function NasabahRegisterPage() {
                 type="button"
                 onClick={() =>
                   setShowConfirmPassword(
-                    (prev) =>
-                      !prev
+                    (prev) => !prev
                   )
                 }
                 disabled={loading}
@@ -717,9 +708,8 @@ export default function NasabahRegisterPage() {
                 htmlFor="foto"
                 className="block text-xs text-[#858078] mb-1.5"
               >
-                Foto Profil
+                Foto Profil{" "}
                 <span className="text-[#AAA49C]">
-                  {" "}
                   (opsional)
                 </span>
               </label>
@@ -729,9 +719,7 @@ export default function NasabahRegisterPage() {
                 name="foto"
                 type="file"
                 accept="image/jpeg,image/png"
-                onChange={
-                  handleFotoChange
-                }
+                onChange={handleFotoChange}
                 disabled={loading}
                 className="w-full text-xs text-[#77736D] file:mr-3 file:rounded-[8px] file:border-0 file:bg-[#EEE8E1] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#6F675F] hover:file:bg-[#E5DED6] disabled:opacity-60"
               />

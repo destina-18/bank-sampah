@@ -48,26 +48,13 @@ const menuItems = [
     path: "/nasabah/tukar-poin",
     icon: Gift,
   },
-  {
-    label: "Akun",
-    path: "/nasabah/akun",
-    icon: UserCircle,
-  },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-
-  // ======================================================
-  // LOGOUT
-  // ======================================================
-
   const logout = () => {
-    // ====================================================
-    // 1. HAPUS LOCAL STORAGE
-    // ====================================================
-
+  
     localStorage.removeItem("token");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("accesstoken");
@@ -78,19 +65,11 @@ export function AppSidebar() {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
 
-    // ====================================================
-    // 2. HAPUS COOKIE AUTH NASABAH
-    // ====================================================
-
     document.cookie =
       "bank_sampah_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
     document.cookie =
       "bank_sampah_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
-
-    // ====================================================
-    // 3. HAPUS COOKIE AUTH LAMA / ALTERNATIF
-    // ====================================================
 
     document.cookie =
       "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
@@ -104,16 +83,8 @@ export function AppSidebar() {
     document.cookie =
       "role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 
-    // ====================================================
-    // 4. KEMBALI KE LANDING PAGE
-    // ====================================================
-
     window.location.replace("/");
   };
-
-  // ======================================================
-  // PROFILE NASABAH
-  // ======================================================
 
   const profile = {
     name: "Nasabah",
@@ -125,10 +96,6 @@ export function AppSidebar() {
       collapsible="offcanvas"
       className="border-r border-[#e5e0d5] bg-[#fbfaf7]"
     >
-      {/* ==================================================
-          HEADER
-      ================================================== */}
-
       <SidebarHeader className="border-b border-[#e8e4da] bg-[#fbfaf7] px-5 py-7">
         <div className="flex items-center gap-3">
 
@@ -152,11 +119,6 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarHeader>
-
-      {/* ==================================================
-          MENU
-      ================================================== */}
-
       <SidebarContent className="bg-[#fbfaf7] px-3 py-5">
         <SidebarGroup>
 
@@ -208,18 +170,8 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-
-      {/* ==================================================
-          FOOTER
-      ================================================== */}
-
       <SidebarFooter className="border-t border-[#e8e4da] bg-[#fbfaf7] px-3 py-4">
         <SidebarMenu>
-
-          {/* =================================================
-              PROFILE / AKUN
-          ================================================= */}
-
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Akun"
@@ -271,11 +223,6 @@ export function AppSidebar() {
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
-          {/* =================================================
-              LOGOUT
-          ================================================= */}
-
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Keluar"
